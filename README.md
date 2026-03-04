@@ -47,4 +47,14 @@ tests/
 ## Requirements
 
 - **Node.js** (for the CLI and Jest)
+- **Yarn 4** (package manager; uses Plug'n'Play — no `node_modules/`): `corepack enable`
 - **Python 3 + pytest** (for Python problems): `pip install pytest`
+- **VS Code** with the `code` shell command installed (for automatic editor launch): [setup instructions](https://code.visualstudio.com/docs/configure/command-line)
+
+## VS Code Behavior
+
+When you select a problem, the CLI automatically opens VS Code via `interview-study.code-workspace` and jumps to the solution file. The workspace file disables AI-powered completions (GitHub Copilot, Tabnine, Codeium, etc.) and hides UI chrome for a distraction-free editor. These settings only apply when VS Code is opened through the CLI — opening the folder manually in VS Code uses your normal settings.
+
+## Troubleshooting
+
+- **VS Code doesn't open automatically:** The `code` CLI is not on your `$PATH`. Follow the [VS Code command line setup instructions](https://code.visualstudio.com/docs/configure/command-line) to install it (Cmd+Shift+P → "Shell Command: Install 'code' command in PATH").

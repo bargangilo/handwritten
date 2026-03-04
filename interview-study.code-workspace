@@ -1,0 +1,27 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    // Editor settings (workspace-compatible)
+    "editor.inlineSuggest.enabled": false,
+    "editor.minimap.enabled": false,
+    "editor.scrollbar.vertical": "auto",
+    "editor.scrollbar.horizontal": "auto",
+    "editor.quickSuggestions": {
+      "other": "on",
+      "comments": "off",
+      "strings": "off"
+    },
+    "editor.suggestOnTriggerCharacters": true,
+    "editor.parameterHints.enabled": true,
+    "editor.wordBasedSuggestions": "matchingDocuments",
+    "breadcrumbs.enabled": false,
+    "explorer.openEditors.visible": 0,
+    "workbench.editor.showTabs": "none",
+    "workbench.startupEditor": "none",
+    "workbench.tips.enabled": false
+  }
+}

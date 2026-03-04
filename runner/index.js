@@ -1,10 +1,53 @@
 const path = require("path");
 const fs = require("fs");
+const { execFileSync, spawn } = require("child_process");
 const { select } = require("@inquirer/prompts");
 const chalk = require("chalk");
 const { startWatching } = require("./watcher");
 
 const ROOT_DIR = path.resolve(__dirname, "..");
+const VSCODE_DATA_DIR = path.join(ROOT_DIR, ".vscode-data");
+
+const VSCODE_USER_SETTINGS = {
+  // Disable AI completions
+  "github.copilot.editor.enableAutoCompletions": false,
+  "github.copilot.enable": { "*": false },
+  "github.copilot.editor.enableCodeActions": false,
+  "chat.commandCenter.enabled": false,
+  "editor.inlineSuggest.enabled": false,
+
+  // Hide all UI chrome — editor only
+  "workbench.sideBar.visible": false,
+  "workbench.secondarySideBar.defaultVisibility": "hidden",
+  "workbench.activityBar.location": "hidden",
+  "workbench.statusBar.visible": false,
+  "workbench.panel.visible": false,
+  "workbench.editor.showTabs": "none",
+  "workbench.startupEditor": "none",
+  "workbench.tips.enabled": false,
+  "breadcrumbs.enabled": false,
+  "editor.minimap.enabled": false,
+  "window.menuBarVisibility": "hidden",
+  "window.restoreWindows": "none",
+  "explorer.openEditors.visible": 0,
+
+  // Keep standard IntelliSense
+  "editor.quickSuggestions": { other: "on", comments: "off", strings: "off" },
+  "editor.suggestOnTriggerCharacters": true,
+  "editor.parameterHints.enabled": true,
+  "editor.wordBasedSuggestions": "matchingDocuments",
+  "editor.scrollbar.vertical": "auto",
+  "editor.scrollbar.horizontal": "auto",
+};
+
+function ensureVscodeDataDir() {
+  const userDir = path.join(VSCODE_DATA_DIR, "User");
+  fs.mkdirSync(userDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(userDir, "settings.json"),
+    JSON.stringify(VSCODE_USER_SETTINGS, null, 2)
+  );
+}
 
 function detectProblems() {
   const problemsDir = path.join(ROOT_DIR, "problems");
@@ -91,6 +134,31 @@ async function main() {
         message: "Select a language:",
         choices: languages.map((l) => ({ name: l, value: l })),
       });
+    }
+
+    // Launch VS Code if available, with isolated user-data-dir for clean UI
+    try {
+      execFileSync("which", ["code"], { stdio: "ignore" });
+      ensureVscodeDataDir();
+      const ext = language === "JavaScript" ? "js" : "py";
+      const solutionFile = path.join(ROOT_DIR, "problems", problem, `main.${ext}`);
+      const workspace = path.join(ROOT_DIR, "interview-study.code-workspace");
+      const child = spawn("code", [
+        "--user-data-dir", VSCODE_DATA_DIR,
+        workspace,
+        "-g", solutionFile,
+      ], {
+        cwd: ROOT_DIR,
+        stdio: "ignore",
+        detached: true,
+      });
+      child.unref();
+    } catch {
+      console.log(
+        chalk.yellow(
+          "  VS Code not found on PATH — skipping editor launch. See README for setup instructions."
+        )
+      );
     }
 
     // Start watching
