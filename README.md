@@ -1,186 +1,142 @@
 # Interview Study
 
-A hot-reload coding study environment for practicing interview problems.
+A hot-reload practice environment for coding interview problems. Select a problem, pick JavaScript or Python, and start coding — tests re-run automatically on every save. Problems reveal themselves progressively: you only see the next part after passing the current one. A built-in timer tracks your session, and stats persist across attempts so you can measure improvement over time. VS Code launches automatically with AI completions disabled for distraction-free practice.
 
-## Getting Started
+## Quick Start
 
 ```bash
-yarn install
-./start.sh
-# or: yarn start
+corepack enable                  # activates Yarn 4 (one-time setup)
+git clone <repo-url> && cd interview-study
+yarn install                     # installs dependencies via Plug'n'Play (no node_modules/)
+yarn start                       # launches the CLI
 ```
+
+On first run, pick a problem, choose a language, and start editing the workspace file. Tests run on save.
+
+## Prerequisites
+
+| Requirement | Verify | Notes |
+|---|---|---|
+| **Node.js** (>=18) | `node --version` | Required for the CLI and Jest |
+| **Corepack** | `corepack --version` | Ships with Node 18+. Run `corepack enable` once to activate Yarn 4 |
+| **Yarn 4** | `yarn --version` | Managed via Corepack — do not install globally. The repo pins `yarn@4.13.0` in `package.json` |
+| **Python 3** | `python3 --version` | Required only for Python problems |
+| **pytest** | `pytest --version` | `pip install pytest`. Required only for Python problems |
+| **VS Code** + `code` CLI | `which code` | The CLI launches VS Code automatically. Install the shell command: Cmd+Shift+P → "Shell Command: Install 'code' command in PATH" |
 
 ## How It Works
 
-The CLI opens to a main menu with five options:
+The repo separates read-only problem definitions from your working code. Problem configs, stubs, and test suites live in `problems/` and are never modified at runtime. When you start a problem, the CLI copies the starter scaffold into `workspace/<name>/`, which is gitignored — your progress stays local and the repo remains cleanly clonable.
 
-```
-Interview Study
-───────────────
-❯ Start a Problem
-  Problem List
-  Stats
-  Clear a Problem
-  Exit
-```
+Multi-part problems use progressive revelation. You start with Part 1's scaffold and tests. When all tests pass, the CLI appends the next part's scaffold to the same file and activates its tests. You never switch files — the solution accumulates as you advance. The total number of parts is hidden during a session; you only see how many you have unlocked.
 
-### Start a Problem
+Every session is timed. You choose between stopwatch mode (count up) and countdown mode (set a time limit). The timer runs in the summary line, pauses on demand, and persists to `session.json` so you can resume where you left off. On session end, the attempt is recorded with per-part split times for later review.
 
-1. Browse a list of problems showing titles, descriptions, and workspace status badges
-2. Choose JavaScript or Python
-3. Set a time limit (countdown) or press Enter for stopwatch mode — the problem's `expectedMinutes` pre-populates the prompt
-4. If a previous session exists, choose to **resume** or **restart from scratch**
-5. Edit the solution file — tests re-run automatically on every save
-6. A summary line shows pass/fail counts, part progress, and a live timer
-7. Press **P** to pause/resume the timer
-8. Press **Q** to return to the main menu (session is saved automatically)
+VS Code opens via a workspace file that disables GitHub Copilot, Tabnine, Codeium, and other AI completion extensions. A sandboxed user-data directory (`--user-data-dir .vscode-data`) ensures these settings only apply during practice sessions — your normal VS Code configuration is untouched.
 
-Each problem in the picker shows its title and description from `problem.json`, plus a status badge if you've started it before:
-- **[in progress]** — workspace exists, working on Part 1
-- **[part N reached]** — advanced to Part N
-- **[complete]** — all parts finished
+## Features
+
+### Main Menu
+
+The CLI presents five options: **Start a Problem**, **Problem List**, **Stats**, **Clear a Problem**, and **Exit**.
+
+### Starting a Problem
+
+The problem picker shows each problem's title, description, and a status badge indicating prior progress: `[in progress]`, `[part N reached]`, or `[complete]`. After selecting a problem and language, you set a time limit (countdown mode) or press Enter for stopwatch mode. If the problem defines `expectedMinutes` in its config, that value pre-populates the countdown prompt.
+
+Existing sessions prompt you to **resume** (restore your file and timer state) or **restart from scratch** (overwrite with the Part 1 scaffold). During a session, press **P** to pause/resume the timer and **Q** to save and return to the menu. Ctrl+C also saves the session before exiting.
 
 ### Problem List
 
-Browse all available problems in a read-only view. Select any problem to see full details including part titles, descriptions, and current status. This is informational only — no session is started.
+A read-only browser for all available problems. Select any problem to see its full details — part titles, descriptions, and your current status. No session is started.
 
 ### Stats
 
-View your practice statistics across all problems. Shows total practice time, problems attempted/completed, average and best solve times, and your current streak. Select any problem to see per-problem stats including attempt history, best splits, and countdown vs. stopwatch breakdown.
+Aggregate practice statistics: total time, problems attempted and completed, average and best solve times, and your current streak (consecutive calendar days with at least one attempt). Select a problem to see per-problem details including attempt history with timestamps, completion status, countdown info, and per-part split times from your fastest run. See [docs/stats-and-timer.md](docs/stats-and-timer.md) for computation details.
+
+### Timer
+
+Two modes: **stopwatch** counts up with no limit; **countdown** counts down from a set duration with color-coded urgency (green → yellow → red). Countdown mode continues into overtime rather than stopping. Milestone warnings print at 15/30/45 minutes (stopwatch) or 50%/25% remaining (countdown). The timer persists every second to `session.json` and restores on resume. See [docs/stats-and-timer.md](docs/stats-and-timer.md) for the full reference.
 
 ### Clear a Problem
 
-Remove your workspace for a problem to start fresh. Only problems with existing workspaces are shown. A confirmation prompt prevents accidental clears.
-
-### Exit
-
-Cleanly terminates the CLI.
+Removes your workspace directory for a problem, deleting the solution file and session data. Only problems with existing workspaces appear. A confirmation prompt (defaulting to No) prevents accidental clears.
 
 ## Project Structure
 
 ```
-problems/                          ← read-only source of truth (never modified at runtime)
-  <problem-name>/
-    problem.json                   # Problem config (required for CLI listing)
-    main.js                        # JavaScript stub (used for problem detection)
-    main.py                        # Python stub (used for problem detection)
-    suite.test.js                  # Jest tests (multi-part problems)
-    suite.test.py                  # pytest tests (multi-part problems)
-    sample.test.js                 # Jest tests (single-part problems)
-    test_sample.py                 # pytest tests (single-part problems)
-workspace/                         ← gitignored working area (user edits happen here)
-  .gitkeep                         # Ensures folder is committed
-  <problem-name>/                  # Created by CLI on problem start
+problems/                          # Read-only problem definitions (never modified at runtime)
+  <name>/
+    problem.json                   # Problem config — title, parts, tests, scaffolds
+    main.js                        # JS stub (used for language detection)
+    main.py                        # Python stub (used for language detection)
+    suite.test.js                  # Jest tests for multi-part problems
+    suite.test.py                  # pytest tests for multi-part problems
+    sample.test.js                 # Jest tests for single-part (legacy) problems
+    test_sample.py                 # pytest tests for single-part (legacy) problems
+workspace/                         # Gitignored working area
+  .gitkeep                         # Ensures the directory is committed
+  <name>/                          # Created by CLI on problem start
     main.js                        # Active JS solution file
     main.py                        # Active Python solution file
-tests/
-  runner/                          # Unit tests for the CLI runner
-    index.test.js
-    watcher.test.js
-    ui.test.js
-    fixtures/                      # Test fixtures
-docs/
-  problem-schema.md                # Authoring reference for multi-part problems
+    session.json                   # Timer state and attempt history
 runner/                            # CLI application source
-  index.js
-  watcher.js
-  ui.js
-  config.js
+  index.js                         # Entry point, main menu, session lifecycle
+  watcher.js                       # File watcher, test runner, part progression
+  ui.js                            # Terminal output formatting
+  config.js                        # Problem config loading, workspace management
+  timer.js                         # Timer state machine
+  stats.js                         # Session persistence, stats computation
+tests/
+  runner/                          # Unit tests for the CLI (run via yarn test)
+    index.test.js                  # Config loading, workspace management tests
+    watcher.test.js                # Test filter building, part progression tests
+    ui.test.js                     # Output formatting tests
+    timer.test.js                  # Timer math and state tests
+    stats.test.js                  # Stats computation and session I/O tests
+    fixtures/                      # Test fixture files
+docs/
+  problem-schema.md                # problem.json authoring reference
+  stats-and-timer.md               # Timer, session persistence, and stats reference
 ```
 
-### Workspace Directory
+## Adding Problems
 
-The `workspace/` folder is committed to the repo (via `.gitkeep`) but its contents are gitignored. This means:
+Each problem lives in its own directory under `problems/` with a `problem.json` config file. The CLI auto-detects problem directories on startup; any directory without a valid `problem.json` is skipped with a warning.
 
-- **User progress is local only** — it will not be pushed to a shared repo
-- The repo stays cleanly clonable — `git clone` gives everyone a fresh start
-- Selecting a problem copies the starting scaffold into `workspace/<problem-name>/` automatically
-- Your work persists between sessions until you explicitly choose "Restart from scratch" or use "Clear a Problem"
-
-## Adding a New Problem
-
-1. Create `problems/<name>/problem.json` with at least a `title`, `description`, and `parts` array (see [docs/problem-schema.md](docs/problem-schema.md))
-2. Create `problems/<name>/main.js` and/or `main.py` with a stub function
-3. Create `problems/<name>/suite.test.js` and/or `suite.test.py` with test cases inside the same problem folder
-4. The CLI auto-detects new problems on each run
-
-Problems without a `problem.json` are skipped in the CLI with a warning. The `title` and `description` fields are displayed in the problem picker and problem list, so they should be concise and meaningful.
-
-### Conventions
-
-- JS solution files should `module.exports` the main function
-- Test files live inside `problems/<name>/` alongside the problem source files
-- Test files import from `workspace/<name>/main` (not `problems/`)
-- Single-part test files: `sample.test.js` / `test_sample.py`
-- Multi-part test files: `suite.test.js` / `suite.test.py`
-
-## Multi-Part Problems
-
-Problems can be split into progressive parts using the `parts` array in `problem.json`. When you select a multi-part problem, the CLI:
-
-1. Writes starter code (scaffold) to the workspace file
-2. Runs only the tests for the current part
-3. When all tests pass, appends the next part's scaffold to the same file
-4. Shows progress: `Part X of Y unlocked`
-5. After all parts complete, returns to the main menu
-
-You never switch files — the single `main.js` or `main.py` accumulates content as you progress. The total number of parts is intentionally hidden during a session; only the unlocked count is shown.
-
-### Resume / Restart
-
-When you re-select a problem that has an existing workspace file, the CLI prompts:
+Required files for a multi-part problem:
 
 ```
-A previous session was found for this problem.
-❯ Resume where you left off
-  Restart from scratch
+problems/<name>/
+  problem.json       # title, description, expectedMinutes, parts array
+  main.js            # JS stub — module.exports the main function(s)
+  main.py            # Python stub
+  suite.test.js      # All Jest tests for all parts in one file
+  suite.test.py      # All pytest tests for all parts in one file
 ```
 
-**Resume** (default) reads the existing file and infers your current part from the delimiter comments in the file. **Restart** overwrites the file with the Part 1 scaffold.
+The `parts` array in `problem.json` defines each part's title, description, `activeTests` (test names to run), and `scaffold` (starter code). Test names use spaces in `activeTests`; Jest matches them directly, and pytest function names mirror them with underscores prefixed by `test_`. Test files import from `../../workspace/<name>/main`, not from `problems/`.
 
-See [docs/problem-schema.md](docs/problem-schema.md) for the full authoring reference.
-
-## Timer & Session Tracking
-
-Every session is timed automatically. You can choose between **stopwatch** (count up) and **countdown** (set a time limit) modes at session start. The timer appears in the summary line and updates every second.
-
-- **Pause/resume:** Press **P** during a session
-- **Countdown colors:** Green (>50% left) → Yellow (25–50%) → Red (<25%) → Overtime
-- **Milestone warnings:** Printed at 15/30/45 minutes (stopwatch) or 50%/25% remaining (countdown)
-- **Session saves:** Time is persisted to `workspace/<name>/session.json` every second and on exit
-- **Ctrl+C handling:** Sessions are saved before exiting — no progress is lost
-- **Resume:** When resuming, your timer picks up where you left off with accumulated time restored
-- **Part splits:** Time per part is recorded when you advance to the next part
-
-See [docs/stats-and-timer.md](docs/stats-and-timer.md) for the full reference.
-
-## Testing the Runner
-
-Runner unit tests live in `tests/runner/` and cover the CLI's config loading, workspace management, UI output, and watcher logic.
-
-```bash
-yarn test        # runs all runner unit tests
-```
-
-There are two distinct types of tests in this project:
-
-- **Runner unit tests** (`tests/runner/*.test.js`) — test the CLI application itself. Run via `yarn test`. These mock all filesystem and process calls.
-- **Problem suite files** (`problems/<name>/suite.test.js` and `suite.test.py`) — test the user's solution code during a study session. These are **never** run by `yarn test`. They are only invoked directly by the CLI watcher when a user is working on a problem.
-
-The Jest config in `package.json` explicitly excludes `problems/` from test discovery via `testPathIgnorePatterns`, so `yarn test` will never accidentally run problem suites.
-
-## Requirements
-
-- **Node.js** (for the CLI and Jest)
-- **Yarn 4** (package manager; uses Plug'n'Play — no `node_modules/`): `corepack enable`
-- **Python 3 + pytest** (for Python problems): `pip install pytest`
-- **VS Code** with the `code` shell command installed (for automatic editor launch): [setup instructions](https://code.visualstudio.com/docs/configure/command-line)
-
-## VS Code Behavior
-
-When you select a problem, the CLI automatically opens VS Code via `interview-study.code-workspace` and jumps directly to the workspace solution file (e.g. `workspace/flatten-and-sum/main.js`). The workspace file disables AI-powered completions (GitHub Copilot, Tabnine, Codeium, etc.) and hides UI chrome for a distraction-free editor. These settings only apply when VS Code is opened through the CLI — opening the folder manually in VS Code uses your normal settings.
+See [docs/problem-schema.md](docs/problem-schema.md) for the full schema reference, worked examples, and common mistakes.
 
 ## Troubleshooting
 
-- **VS Code doesn't open automatically:** The `code` CLI is not on your `$PATH`. Follow the [VS Code command line setup instructions](https://code.visualstudio.com/docs/configure/command-line) to install it (Cmd+Shift+P → "Shell Command: Install 'code' command in PATH").
-- **Problem not showing in the menu:** Ensure it has a valid `problem.json` file. Problems without one are skipped with a warning.
+**VS Code does not open.** The `code` CLI is not on your `$PATH`. In VS Code: Cmd+Shift+P → "Shell Command: Install 'code' command in PATH". The CLI prints a warning and continues if `code` is not found.
+
+**Problem not showing in the menu.** The problem directory is missing a `problem.json` file, or the file contains invalid JSON. Check the CLI's startup warnings for details.
+
+**pytest not found.** Python problems require `pytest` on the system PATH. Install it with `pip install pytest` and verify with `pytest --version`.
+
+**Jest not discovering tests.** Problem suite files (`suite.test.js`, `sample.test.js`) are excluded from `yarn test` via `testPathIgnorePatterns` in `package.json`. This is intentional — those tests run only during interactive sessions via the CLI watcher. Runner unit tests in `tests/runner/` are the ones discovered by `yarn test`.
+
+**Malformed `session.json`.** If a session file becomes corrupted, the CLI logs a warning and treats the problem as having no session data. Delete the file (or use "Clear a Problem") to reset.
+
+**Node version issues.** The CLI requires Node 18 or later. Yarn 4 with Plug'n'Play requires Corepack, which ships with Node 18+. Run `corepack enable` if Yarn is not recognized.
+
+## Contributing
+
+Run the runner unit tests with `yarn test`. The test suite covers config loading, workspace management, UI output, file watching logic, timer math, and stats computation — all via mocked filesystem and process calls. No real I/O occurs during tests.
+
+Problem suite files (`problems/*/suite.test.*` and `problems/*/sample.test.*`) are not part of the test suite. They test user solutions during interactive sessions and are explicitly excluded from Jest discovery.
+
+Documentation standards are codified in [CLAUDE.md](CLAUDE.md). Any change to the runner, schemas, or user-facing behavior must include corresponding documentation updates.

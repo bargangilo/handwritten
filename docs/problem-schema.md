@@ -1,140 +1,110 @@
-# Multi-Part Problem Schema
+# Problem Schema Reference
 
-Canonical reference for authoring multi-part problems in `interview-study`.
+Every problem in this tool is defined by a `problem.json` file in `problems/<name>/`. This file controls what the CLI displays in the problem picker, how the session progresses through parts, which tests run at each stage, and what starter code is injected into the workspace. Problem authors create these files manually. The CLI validates the schema on load and skips problems with malformed configs.
 
-## Folder Structure
+## Schema
 
-```
-problems/<name>/
-  problem.json     # Problem configuration (required for multi-part)
-  main.js          # JS stub (read-only, used for problem detection)
-  main.py          # Python stub (read-only, used for problem detection)
-  suite.test.js    # Jest tests — all parts in one file
-  suite.test.py    # pytest tests — all parts in one file
-workspace/<name>/
-  main.js          # Active JS solution file (written by CLI, edited by user)
-  main.py          # Active Python solution file (written by CLI, edited by user)
-```
-
-Test suite files live alongside the problem config inside `problems/<name>/`. The `problems/` directory is never modified at runtime — scaffolds are written to `workspace/`. Single-part (legacy) problems omit `problem.json` and use `sample.test.js` / `test_sample.py` instead.
-
-## `problem.json` Schema
-
-```json
-{
-  "title": "Human-readable problem title",
-  "description": "Brief description of the overall problem",
-  "parts": [
-    {
-      "title": "Part title shown in the CLI",
-      "description": "What the user needs to implement",
-      "activeTests": ["test name exactly as in the suite file"],
-      "scaffold": {
-        "js": "// JavaScript starter code",
-        "python": "# Python starter code"
-      }
-    }
-  ]
-}
-```
-
-### Field Reference
+### Top-Level Fields
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `title` | string | No | Display name shown in the problem picker and problem list. Defaults to directory name. Keep it concise. |
-| `description` | string | No | Brief description shown below the title in the problem picker (truncated at 80 chars) and in the full problem list view. Should be a meaningful one-liner. |
-| `expectedMinutes` | integer | No | Suggested time limit in minutes. Pre-populates the countdown prompt at session start. See [docs/stats-and-timer.md](stats-and-timer.md). |
-| `parts` | array | **Yes** | Ordered list of parts. Must have at least one entry. |
-| `parts[].title` | string | No | Display name for the part, shown in the CLI during sessions and in the problem list detail view. |
-| `parts[].description` | string | No | Explanation of what to implement, shown during sessions and in the problem list detail view. |
-| `parts[].activeTests` | string[] | **Yes** | Test names to run when this part is active. Must be non-empty. |
-| `parts[].scaffold.js` | string | No | JavaScript starter code for this part. |
-| `parts[].scaffold.python` | string | No | Python starter code for this part. |
+| `title` | string | No | Display name in the problem picker and problem list. Defaults to the directory name if omitted. |
+| `description` | string | No | One-line summary shown below the title in the picker (truncated at 80 characters) and in full in the problem list detail view. |
+| `expectedMinutes` | integer | No | Suggested time limit in minutes. Pre-populates the countdown prompt at session start. See [stats-and-timer.md](stats-and-timer.md) for how this integrates with the timer. |
+| `parts` | array | **Yes** | Ordered list of part objects. Must contain at least one entry. |
 
-## How `activeTests` Works
+### Part Fields
+
+Each entry in the `parts` array defines one stage of the problem.
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `title` | string | No | Part name shown in the CLI during sessions and in the problem list detail view. |
+| `description` | string | No | Explanation of what to implement. Shown when a part is introduced during a session and in the problem list. |
+| `activeTests` | string[] | **Yes** | Test names to run when this part is active. Must be non-empty. See [activeTests Behavior](#activetests-behavior) for matching rules. |
+| `scaffold.js` | string | No | JavaScript starter code for this part. Written to the workspace file on start (Part 1) or appended on advancement (Part 2+). |
+| `scaffold.python` | string | No | Python starter code for this part. Same write/append behavior as `scaffold.js`. |
+
+## `activeTests` Behavior
 
 ### Test Name Matching
 
-- **Jest**: Each entry in `activeTests` is joined with `|` and passed to `--testNamePattern` as a regex. The value must match the string inside `test("...")` or `it("...")`.
-- **pytest**: Each entry has spaces replaced with underscores, then joined with ` or ` for the `-k` flag. Test function names should mirror the `activeTests` name with underscores, prefixed by `test_`.
+Each entry in `activeTests` is a human-readable string with spaces. The CLI translates these into test runner filter arguments:
 
-**Convention**: Write `activeTests` names with spaces (human-readable). Name Python test functions as `test_` + the name with spaces replaced by underscores.
+**Jest:** All entries are joined with `|` and passed to `--testNamePattern` as a regex. Regex special characters in test names are escaped automatically. Each entry must match the string inside `test("...")` or `it("...")` in the suite file.
 
-Example:
-- `activeTests`: `"already flat array"`
-- Jest test: `test("already flat array", () => { ... })`
-- pytest function: `def test_already_flat_array():`
+**pytest:** Each entry has spaces replaced with underscores, and entries are joined with ` or ` for the `-k` flag. Test function names in the suite file must be `test_` followed by the entry with spaces replaced by underscores.
 
-### Cumulative Behavior
+Example for `"already flat array"`:
+- `suite.test.js`: `test("already flat array", () => { ... })`
+- `suite.test.py`: `def test_already_flat_array():`
 
-`activeTests` is **not automatically cumulative**. The CLI runs exactly the tests listed in the current part's `activeTests`. If you want Part 2 to continue running Part 1 tests, you must explicitly include them in Part 2's `activeTests` array.
+### Accumulation Across Parts
 
-This is by design — it allows **selective deactivation**: if a Part 1 test should stop running in Part 2, simply omit it from Part 2's `activeTests`.
+`activeTests` is **not automatically cumulative**. The CLI runs exactly the tests listed in the current part's `activeTests`. To keep Part 1 tests running in Part 2, include them explicitly in Part 2's `activeTests` array.
+
+This is intentional — it enables selective deactivation. If a Part 1 test should stop running in Part 2 (e.g., because Part 2 changes the function's behavior), omit it from Part 2's `activeTests`.
 
 ### Part Advancement
 
-A part is considered complete when **all tests in the current part's `activeTests`** pass. The CLI checks `passed === total` after each test run.
+A part is complete when all tests in its `activeTests` pass: `passed === total && total > 0`. The CLI checks this condition after every test run.
 
 ## Scaffold Injection
 
-### On Problem Start (Part 1)
+### Part 1 (Problem Start)
 
-The CLI writes `parts[0].scaffold.js` / `parts[0].scaffold.python` to `workspace/<name>/main.js` / `main.py`. If a previous session exists, the user is prompted to resume or restart from scratch.
+The CLI writes `parts[0].scaffold.js` or `parts[0].scaffold.python` to `workspace/<name>/main.js` or `main.py`. If the user already has a workspace file and chooses "Restart from scratch", the file is overwritten with Part 1's scaffold. If the scaffold key is missing, an empty file is written.
 
-### On Part Progression (Part 2+)
+### Part 2+ (Advancement)
 
-When the user passes all tests for the current part, the next part's scaffold is **appended** to the file with a delimiter comment:
+When the user passes all tests for the current part, the next part's scaffold is appended to the existing file with a delimiter comment:
 
-**JavaScript:**
-```
-// ---- Part 2 ----
-```
+JavaScript: `// ---- Part N ----`
 
-**Python:**
-```
-# ---- Part 2 ----
-```
+Python: `# ---- Part N ----`
 
-### Scaffold Tips
+The delimiter is how `inferCurrentPart` detects which part the user is on during a resume. The number in the delimiter is 1-indexed (Part 2's delimiter says "Part 2").
 
-- Part 1 scaffold should include the full file setup: doc comments, function stubs, and `module.exports` (JS).
-- Part 2+ scaffolds are appended, so use additive exports in JS: `module.exports.newFunction = newFunction` instead of `module.exports = { ... }` which would overwrite Part 1's exports.
-- Python scaffolds just define new functions — they're importable from `main` automatically.
-- Include `// TODO` or `pass` in function bodies to make the stub obvious.
+### Scaffold Authoring Guidelines
 
-## Test File Conventions
+Part 1's scaffold should include the full file setup: doc comments, function stubs, and `module.exports` (JS). Part 2+ scaffolds are appended, so JS scaffolds should use additive exports (`module.exports.newFunction = newFunction`) rather than reassigning `module.exports`, which would overwrite Part 1's exports. Python scaffolds define new functions directly — they are importable from `main` automatically.
 
-### File Naming and Location
+Use `// TODO` or `pass` in function bodies to make stubs obvious. If a part requires the user to modify an existing function in place (no new exports), the scaffold can be an empty string — the delimiter is still written to mark part progression.
 
-All test files live inside `problems/<name>/` alongside the problem config:
+## Suite Test File Conventions
 
-- Multi-part problems: `problems/<name>/suite.test.js` / `suite.test.py`
-- Legacy single-part problems: `problems/<name>/sample.test.js` / `test_sample.py`
+### File Naming
+
+All test files live inside `problems/<name>/` alongside `problem.json`:
+
+- Multi-part problems: `suite.test.js` / `suite.test.py`
+- Single-part (legacy) problems: `sample.test.js` / `test_sample.py`
+
+The CLI selects the correct file based on whether a test filter is present (multi-part) or not (legacy).
 
 ### Jest (`suite.test.js`)
 
-Write all tests for all parts in the file. Use `const mod = require(...)` at the top, importing from `workspace/`. Functions that don't exist yet (from future parts) will be `undefined`, but their test callbacks are filtered out by `--testNamePattern` and never execute.
+Write all tests for all parts in a single file. Import from the workspace path. Functions from future parts will be `undefined` when their tests are filtered out by `--testNamePattern`, so the test callbacks never execute.
 
 ```js
 const mod = require("../../workspace/<name>/main");
 
 describe("Part 1 Function", () => {
   test("test name matching activeTests", () => {
-    expect(mod.part1Fn([1, 2])).toEqual([1, 2]);
+    expect(mod.partOneFn([1, 2])).toEqual([1, 2]);
   });
 });
 
 describe("Part 2 Function", () => {
   test("test name matching activeTests", () => {
-    expect(mod.part2Fn([1, 2])).toBe(3);
+    expect(mod.partTwoFn([1, 2])).toBe(3);
   });
 });
 ```
 
 ### pytest (`suite.test.py`)
 
-Use **function-local imports** for each test. This prevents `ImportError` when importing functions from parts that haven't been unlocked yet.
+Use function-local imports in every test function. This prevents `ImportError` when importing functions from parts that have not been unlocked yet — the import only executes when the test is selected by `-k`.
 
 ```python
 import sys
@@ -153,7 +123,7 @@ def test_single_number_nested_deep():
 
 ## Worked Example
 
-A two-part problem called `flatten-and-sum`:
+A two-part problem called `flatten-and-sum`. Part 1 asks the user to flatten a nested array. Part 2 asks them to sum nested elements directly. Part 2 keeps all Part 1 tests active and adds five new ones.
 
 ### `problems/flatten-and-sum/problem.json`
 
@@ -202,33 +172,60 @@ A two-part problem called `flatten-and-sum`:
 }
 ```
 
-**Key points in this example:**
-- Part 2's `activeTests` includes all 5 Part 1 tests plus 5 new tests (10 total)
-- Part 2's JS scaffold uses `module.exports.sumNested = sumNested` (additive)
-- Python tests use function-local imports to avoid importing `sum_nested` during Part 1
+Key points:
 
-### Test Output During Part 1
+- Part 2's `activeTests` includes all five Part 1 tests plus five new ones (ten total). This means the user's `flattenArray` implementation must continue passing while they write `sumNested`.
+- Part 2's JS scaffold uses `module.exports.sumNested = sumNested` (additive export) rather than `module.exports = { ... }`, which would overwrite Part 1's `flattenArray` export.
+- Python scaffolds define new functions directly — no export management needed.
+- `expectedMinutes: 25` pre-populates the countdown prompt so the user does not have to remember a suggested time.
 
+### Corresponding `suite.test.js`
+
+```js
+const mod = require("../../workspace/flatten-and-sum/main");
+
+describe("flattenArray", () => {
+  test("already flat array", () => { expect(mod.flattenArray([1, 2, 3])).toEqual([1, 2, 3]); });
+  test("single level nesting", () => { expect(mod.flattenArray([1, [2, 3]])).toEqual([1, 2, 3]); });
+  test("deep nesting", () => { expect(mod.flattenArray([1, [2, [3, [4]]]])).toEqual([1, 2, 3, 4]); });
+  test("empty array", () => { expect(mod.flattenArray([])).toEqual([]); });
+  test("mixed depth", () => { expect(mod.flattenArray([[1], 2, [[3]]])).toEqual([1, 2, 3]); });
+});
+
+describe("sumNested", () => {
+  test("single number nested deep", () => { expect(mod.sumNested([[[5]]])).toBe(5); });
+  test("multiple numbers across depths", () => { expect(mod.sumNested([1, [2, [3]]])).toBe(6); });
+  test("empty nested array", () => { expect(mod.sumNested([[[]]])).toBe(0); });
+  test("all zeros", () => { expect(mod.sumNested([0, [0, [0]]])).toBe(0); });
+  test("large nested structure", () => { expect(mod.sumNested([[1, 2], [3, [4, 5]]])).toBe(15); });
+});
 ```
-  Part 1 of 1 unlocked   ✔ 3 / 5 tests passing   [last run: 2:14:03 PM]
+
+### Corresponding `suite.test.py`
+
+```python
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workspace", "flatten-and-sum"))
+
+def test_already_flat_array():
+    from main import flatten_array
+    assert flatten_array([1, 2, 3]) == [1, 2, 3]
+
+# ... additional Part 1 tests with function-local imports ...
+
+def test_single_number_nested_deep():
+    from main import sum_nested  # function-local: safe during Part 1
+    assert sum_nested([[[5]]]) == 5
 ```
 
-### After Part 1 Completion
+## Common Mistakes
 
-```
-  ✔ Part 1 complete! Part 2 has been added to your file.
-  ─────────────────────────────────────────────
-  Part 2: Sum nested elements without flattening
-  Implement sumNested(arr) that sums all numbers without flattening first.
-  ─────────────────────────────────────────────────
-```
+**Mismatched test names.** The string in `activeTests` must exactly match the `test("...")` string in Jest and the function name (minus `test_` prefix, with underscores for spaces) in pytest. A typo causes the test to silently not run, which means the part appears to pass with zero tests — but the CLI requires `total > 0` for advancement, so the user gets stuck.
 
-### Test Output During Part 2
+**Forgetting to include prior tests.** `activeTests` is not cumulative. If Part 2 should still run Part 1's tests, every Part 1 test name must appear in Part 2's `activeTests` array. Omitting them means Part 1's implementation could break without the user knowing.
 
-```
-  Part 2 of 2 unlocked   ✔ 7 / 10 tests passing   [last run: 2:15:12 PM]
-```
+**Overwriting exports in JS scaffolds.** A Part 2+ scaffold that uses `module.exports = { newFn }` overwrites all Part 1 exports. Use `module.exports.newFn = newFn` for additive exports.
 
-## Error Handling
+**Top-level imports in pytest.** Importing a function at the module level of `suite.test.py` causes an `ImportError` when that function's part has not been unlocked yet. Use function-local imports inside each test function body.
 
-If `problem.json` exists but is malformed (invalid JSON, missing `parts` array, or a part with no `activeTests`), the CLI shows an error message and returns to the problem menu. The error message points to this document for reference.
+**Malformed scaffold strings.** Scaffolds are JSON strings — newlines must be `\n`, quotes must be escaped. A malformed scaffold causes the workspace file to contain literal `\n` characters or broken syntax. Validate by pasting the scaffold value into a Node REPL: `console.log("...")` should produce valid source code.

@@ -1,73 +1,146 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Standing instructions for Claude Code when working on this repository. Follow these exactly.
 
-## Overview
+## Project Overview
 
-Hot-reload coding study environment for practicing interview problems. Users select a problem and language (JS or Python), then edit solution files while tests re-run automatically on save. User edits happen in `workspace/` (gitignored); `problems/` is read-only source of truth.
+Interview Study is a hot-reload CLI tool for practicing coding interview problems. A solo developer selects a problem, picks JavaScript or Python, and edits a solution file while tests re-run automatically on save. Problems reveal parts progressively — the user only sees the next part after passing the current one. Sessions are timed and persisted, with stats tracking across attempts.
 
-## Commands
+The tool is feature-complete. The primary ongoing work is adding new problems and maintaining the runner.
 
-- **Start the CLI:** `yarn start` or `./start.sh`
-- **Run runner unit tests:** `yarn test`
-- **Run JS problem tests (single-part):** `yarn jest problems/<problem-name>/sample.test.js --no-coverage`
-- **Run JS problem tests (multi-part):** `yarn jest problems/<problem-name>/suite.test.js --no-coverage`
-- **Run Python problem tests (single-part):** `pytest problems/<problem-name>/test_sample.py -v`
-- **Run Python problem tests (multi-part):** `pytest problems/<problem-name>/suite.test.py -v`
-- **Install dependencies:** `yarn install` (uses Yarn 4 with PnP — no `node_modules/`)
+## Environment and Tooling
+
+**Package manager:** Yarn 4 with Plug'n'Play. There is no `node_modules/` directory. The repo pins `yarn@4.13.0` via the `packageManager` field in `package.json`.
+
+```bash
+yarn install          # install dependencies
+yarn start            # launch the CLI (or: ./start.sh)
+yarn test             # run runner unit tests
+```
+
+To run problem test suites directly (outside the CLI):
+
+```bash
+yarn jest problems/<name>/suite.test.js --no-coverage        # JS multi-part
+yarn jest problems/<name>/sample.test.js --no-coverage       # JS single-part
+pytest problems/<name>/suite.test.py -v                      # Python multi-part
+pytest problems/<name>/test_sample.py -v                     # Python single-part
+```
+
+**Node.js:** Requires Node 18 or later. Verify with `node --version`.
+
+**Python:** Required only for Python problems. Needs `python3` and `pytest` on PATH.
+
+**VS Code:** The CLI launches VS Code with `code`. Not required for the CLI to function — a warning prints if `code` is not found.
 
 ## Architecture
 
-The CLI (`runner/`) is a Node.js app with six modules:
-- `runner/index.js` — Main menu (Start a Problem, Problem List, Stats, Clear a Problem, Exit), problem picker with descriptions and status badges, workspace init, resume/restart prompt, countdown prompt, VS Code launch, session lifecycle, P key pause/resume, SIGINT handling
-- `runner/watcher.js` — Uses `chokidar` to watch the workspace solution file; spawns `yarn jest` or `pytest` on change; parses pass/fail counts from test runner output; manages multi-part state and progression; integrates timer for live display updates
-- `runner/ui.js` — Terminal output helpers (summary line with timer display, status indicators, part progress, status badge formatting, milestone warnings, stats formatting)
-- `runner/config.js` — Loads/validates `problem.json`, manages workspace paths, writes scaffolds, builds test filters, infers resume state from part delimiters, workspace status detection, completion markers
-- `runner/timer.js` — Timer state machine (stopwatch/countdown modes, pause/resume, wall-clock-based elapsed math, milestone tracking, serialization for session persistence)
-- `runner/stats.js` — Session read/write (`session.json`), global and per-problem stats computation, streak calculation, time formatting utilities
+The CLI (`runner/`) is a Node.js app with six CommonJS modules:
 
-### Key Path Convention
+- `runner/index.js` — Entry point. Main menu, problem picker, language/countdown prompts, workspace init, resume/restart flow, VS Code launch, P key pause/resume, SIGINT handling, session lifecycle, Stats menu.
+- `runner/watcher.js` — File watcher (`chokidar`). Spawns `yarn jest` or `pytest` on save, parses pass/fail counts, manages multi-part state and part advancement, integrates timer for live display.
+- `runner/ui.js` — Terminal output. Summary line with timer display, part introductions, milestone warnings, status badges, stats formatting.
+- `runner/config.js` — Problem config loading and validation. Workspace path management, scaffold writes, test filter building, resume state inference from file delimiters, workspace status detection, completion markers.
+- `runner/timer.js` — Timer state machine. Stopwatch and countdown modes, pause/resume, wall-clock-based elapsed math (never increments a counter), milestone tracking, serialization for session persistence.
+- `runner/stats.js` — Session I/O (`session.json`). Global and per-problem stats computation, streak calculation, time formatting utilities.
 
-- **Problem config, detection & test suites:** `problems/<name>/` (read-only, never written at runtime)
-- **Working files:** `workspace/<name>/main.js` or `main.py` (created/written by CLI)
-- **Session data:** `workspace/<name>/session.json` (timer state, attempt history)
-- **Runner unit tests:** `tests/runner/` (test the CLI itself, run via `yarn test`)
+### Key Paths
 
-Problem test suites (`suite.test.js`, `sample.test.js`, etc.) live inside `problems/<name>/` alongside the problem config. They are excluded from `yarn test` via `testPathIgnorePatterns` in `package.json` and only invoked directly by the CLI watcher.
+| Path | Purpose | Written at Runtime |
+|---|---|---|
+| `problems/<name>/` | Problem config, stubs, test suites | Never |
+| `workspace/<name>/main.js`, `main.py` | Active solution file | Yes (scaffold, part appends, completion marker) |
+| `workspace/<name>/session.json` | Timer state, attempt history | Yes (every tick + session end) |
+| `tests/runner/` | Runner unit tests | Never |
 
-## Adding a New Problem
+Problem test suites (`suite.test.js`, `sample.test.js`, etc.) live inside `problems/<name>/`. They are excluded from `yarn test` via `testPathIgnorePatterns` in `package.json`.
 
-1. Create `problems/<name>/problem.json` with `title`, `description`, and `parts` array (see `docs/problem-schema.md`)
-2. Create `problems/<name>/main.js` with a stub function exported via `module.exports`
-3. Create `problems/<name>/main.py` with a stub function
-4. Create test files in `problems/<name>/` importing from `../../workspace/<name>/main`
+## Documentation Standards
 
-The CLI auto-detects problem directories. Problems without a `problem.json` are skipped with a warning.
+### Documentation is Part of Done
 
-### Multi-Part Problems
+A task is not complete until all affected documentation is updated. Before starting implementation, identify every file in `README.md`, `docs/`, and this file that will be affected. Updating them is a required deliverable, not optional cleanup.
 
-1. Create `problems/<name>/problem.json` following the schema in `docs/problem-schema.md`
-2. Create stub `main.js` / `main.py` files (needed for detection, never modified at runtime)
-3. Create `problems/<name>/suite.test.js` and `problems/<name>/suite.test.py` with all tests for all parts
-4. Test names in `activeTests` use spaces (Jest-style); Python function names mirror with underscores prefixed by `test_`
-5. Multi-part test files are named `suite.test.*`, not `sample.test.*`
+### What Triggers a Documentation Update
+
+- Any change to main menu options or session flow → update README Features and How It Works sections
+- Any change to `problem.json` or `session.json` schema → update the relevant `docs/` file and README Adding Problems section atomically with the code change
+- Any new, renamed, or moved folder or file → update the README Project Structure diagram and grep all markdown files for stale path references
+- Any new CLI keypress, flag, or user-facing behavior → update README Features
+- Any change to environment requirements or install steps → update README Prerequisites and this file's Environment section
+- Any new `docs/` file → link it from the README on creation
+
+### Voice and Quality
+
+Write in active voice. Be technical and direct. Write for competent developers reading for the first time. Do not use marketing language, filler phrases, or excessive hedging. Do not add bullet points where a short paragraph reads better. Do not use scaffolding language ("TBD", "coming soon", "this will be added later").
+
+Read existing docs before writing new content and match the established register. The quality test: a developer cloning this repo with zero context should be able to understand what it does, run it, and add a new problem using only the docs.
+
+### Schema Docs are Contracts
+
+`problem.json` and `session.json` each have a corresponding doc file that serves as an API reference. If the schema changes in code, the doc changes in the same task. There is no acceptable lag between implementation and documentation for schema changes.
+
+### Cross-Reference Integrity
+
+When renaming anything — a file, a folder, a concept — grep all markdown files for references to the old name and update them. Stale cross-references are bugs.
+
+### New Features and New Docs
+
+If a feature is complex enough to affect the tool's mental model, it warrants a `docs/` file. Use the existing docs as calibration for what level of complexity earns its own file. New `docs/` files must be linked from the README on creation.
 
 ## Testing
 
-Runner unit tests live in `tests/runner/` and cover config loading, workspace management, UI output, and watcher logic. Always add or update tests when making changes to the runner:
+Runner unit tests live in `tests/runner/` and cover config loading, workspace management, UI output, watcher logic, timer math, and stats computation.
 
-- **New features:** Add tests covering the new behavior in the appropriate test file (`index.test.js`, `watcher.test.js`, `ui.test.js`, `timer.test.js`, or `stats.test.js`)
-- **Bug fixes:** Add a regression test that would have caught the bug
-- **Refactors:** Ensure existing tests still pass; update assertions if behavior intentionally changed
-- Run `yarn test` to verify all tests pass before considering work complete
+### Test Files
 
-Test files mock `fs`, `child_process`, and `chokidar` — no real filesystem or process calls. Timer tests use `jest.useFakeTimers()` to control `setInterval` and `Date.now()`. Use the existing test patterns (mock setup in `beforeEach`/per-test, `stripAnsi` helper for UI tests, fixture files in `tests/runner/fixtures/`).
+| File | Covers |
+|---|---|
+| `index.test.js` | Config loading, workspace management, menu structure |
+| `watcher.test.js` | Test filter building, part progression, scaffold appending |
+| `ui.test.js` | Output formatting, timer display, stats formatting |
+| `timer.test.js` | Timer math, pause/resume, milestones, serialization |
+| `stats.test.js` | Stats computation, session I/O, streak, time formatting |
+
+### Patterns
+
+All test files mock `fs`, `child_process`, and `chokidar` — no real filesystem or process calls. Timer tests use `jest.useFakeTimers()` to control `setInterval` and mock `Date.now()`. UI tests use a `stripAnsi` helper. Fixture files live in `tests/runner/fixtures/`.
+
+### Expectations
+
+- New features: add tests covering the new behavior in the appropriate test file
+- Bug fixes: add a regression test that would have caught the bug
+- Refactors: ensure existing tests pass; update assertions if behavior intentionally changed
+- Run `yarn test` and verify all tests pass before considering work complete
+
+Never configure Jest to discover problem suite files (`problems/*/suite.test.*`, `problems/*/sample.test.*`). Those test user solutions during interactive sessions. Never modify runner logic solely to make tests pass — if something is genuinely untestable, note it in a comment.
+
+## Adding Problems
+
+1. Create `problems/<name>/problem.json` with `title`, `description`, and `parts` array
+2. Create `problems/<name>/main.js` with a stub function exported via `module.exports`
+3. Create `problems/<name>/main.py` with a stub function
+4. Create `problems/<name>/suite.test.js` and `suite.test.py` with all tests for all parts
+
+Test names in `activeTests` use spaces. Jest matches them directly. Python function names mirror them: `test_` prefix, underscores for spaces. Test files import from `../../workspace/<name>/main`. Multi-part test files are named `suite.test.*`, not `sample.test.*`.
+
+See [docs/problem-schema.md](docs/problem-schema.md) for the full schema reference.
 
 ## Conventions
 
-- JS solutions use CommonJS (`module.exports` / `require`)
-- Python test files manually add the workspace problem directory to `sys.path` for imports
-- Test output is parsed for pass/fail counts only — raw output is hidden from the user during interactive mode
-- The `problems/` directory is never modified during a session — all writes go to `workspace/`
+- All JS uses CommonJS (`module.exports` / `require`)
+- Python test files add the workspace problem directory to `sys.path` for imports
+- The `problems/` directory is never modified at runtime — all writes go to `workspace/`
 - The `workspace/` folder is committed (via `.gitkeep`) but contents are gitignored
-- Problem test suites are co-located with problems in `problems/<name>/`, not in a separate `tests/` folder
+- Problem test suites are co-located with problems in `problems/<name>/`
+
+## Things to Never Do
+
+- Use a package manager other than Yarn (`npm install`, `npx`, `pnpm`)
+- Add a dependency without noting it in the task summary and updating README Prerequisites
+- Leave a `TODO` or placeholder in documentation
+- Describe a feature in docs that has not been implemented
+- Leave the README Project Structure diagram out of sync with the actual filesystem
+- Guess at environment requirements — read `package.json` and lockfiles
+- Configure Jest to discover problem suite files in `problems/`
+- Modify `problems/` at runtime
