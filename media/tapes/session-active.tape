@@ -27,12 +27,8 @@ Set PlaybackSpeed 0.75
 Set TypingSpeed 80ms
 
 # Schedule a background file touch to trigger the watcher mid-session.
-# Hidden so it does not appear in the recording.
-Hide
-Type "(sleep 18 && echo '' >> workspace/sample-problem/main.js) &"
-Enter
-Sleep 0.5s
-Show
+# Exec runs the command without typing it into the terminal.
+Exec (sleep 18 && echo '' >> workspace/sample-problem/main.js) &
 
 Type "yarn start"
 Enter
