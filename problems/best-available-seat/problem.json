@@ -1,0 +1,32 @@
+{
+  "title": "Best Available Seat",
+  "description": "Find the best affordable option for each customer from a list of available seats",
+  "topics": ["sorting", "binary search", "arrays"],
+  "difficulty": {
+    "algorithmComplexity": 2,
+    "dataStructureComplexity": 2,
+    "problemComplexity": 2,
+    "overall": 2
+  },
+  "style": "real-world",
+  "expectedMinutes": 23,
+  "generatedBy": "agent",
+  "generatedAt": "2026-03-05T12:00:00.000Z",
+  "parts": [
+    {
+      "title": "Find best seat for each budget",
+      "description": "A venue sells seats at various price points. Implement findBestSeats(prices, budgets) that takes an unsorted array of available seat prices and an array of customer budgets. For each budget, return the price of the most expensive seat the customer can afford (price <= budget), or -1 if no seat is within budget. Return the results as an array in the same order as the budgets.",
+      "activeTests": [
+        "finds best seat for each budget",
+        "returns negative one when no seat is affordable",
+        "exact budget match returns that price",
+        "returns most expensive when all are affordable",
+        "empty price list returns all negative ones",
+        "handles many seats and budgets"
+      ],
+      "scaffold": {
+        "js": "/**\n * Find the best affordable seat for each customer budget.\n *\n * @param {number[]} prices - Available seat prices (unsorted)\n * @param {number[]} budgets - Customer budgets to check\n * @returns {number[]} For each budget, the highest price <= budget, or -1 if none\n */\nfunction findBestSeats(prices, budgets) {\n  // TODO: implement\n}\n\nmodule.exports = { findBestSeats };\n"
+      }
+    }
+  ]
+}
