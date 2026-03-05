@@ -6,8 +6,8 @@ import { clearWorkspaceDir } from "../config.js";
 
 export default function ClearConfirm({ dispatch, problem, config, rootDir }) {
   const options = [
-    { label: "No", value: false },
-    { label: "Yes", value: true },
+    { label: "No", value: "no" },
+    { label: "Yes", value: "yes" },
   ];
 
   return (
@@ -16,7 +16,7 @@ export default function ClearConfirm({ dispatch, problem, config, rootDir }) {
       <Select
         options={options}
         onChange={(value) => {
-          if (value) {
+          if (value === "yes") {
             clearWorkspaceDir(problem, rootDir);
           }
           dispatch({ type: Action.CONFIRM_CLEAR });
