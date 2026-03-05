@@ -167,6 +167,9 @@ export default function App({ rootDir }) {
           countdownSeconds={state.countdownSeconds}
           startPart={state.startPart}
           resumeData={state.resumeData}
+          runOutput={state.runOutput}
+          lastRunAt={state.lastRunAt}
+          showLogs={state.showLogs}
           rootDir={rootDir}
         />
       );

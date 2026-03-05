@@ -2,6 +2,7 @@
  * Application state machine for the CLI.
  * Pure state transitions — no side effects, no I/O.
  */
+import { formatRunOutput } from "./format.js";
 
 export const Screen = {
   MAIN_MENU: "MAIN_MENU",
@@ -89,6 +90,7 @@ export const initialState = {
   runTimedOut: false,
   runCrashed: false,
   runSkipped: false,
+  runOutput: [],
   showLogs: false,
   watcherError: null,
   // Settings context
@@ -223,7 +225,18 @@ export function reducer(state, action) {
     }
 
     // --- Session ---
-    case Action.RUN_RESULT_RECEIVED:
+    case Action.RUN_RESULT_RECEIVED: {
+      let runOutput;
+      if (action.skipped) {
+        runOutput = [{ type: "skipped" }];
+      } else if (action.timedOut) {
+        runOutput = [{ type: "timeout" }];
+      } else if (action.crashed) {
+        const parsed = formatRunOutput(action.stdout || "", action.stderr || "");
+        runOutput = [{ type: "crashed" }, ...parsed];
+      } else {
+        runOutput = formatRunOutput(action.stdout || "", action.stderr || "");
+      }
       return {
         ...state,
         rawRunStdout: action.stdout || "",
@@ -232,8 +245,10 @@ export function reducer(state, action) {
         runTimedOut: !!action.timedOut,
         runCrashed: !!action.crashed,
         runSkipped: !!action.skipped,
+        runOutput,
         watcherError: null,
       };
+    }
     case Action.TEST_RESULT_RECEIVED:
       return { ...state, watcherError: null };
     case Action.RUN_TESTS:

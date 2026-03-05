@@ -18,6 +18,7 @@ describe("initialState", () => {
     expect(initialState.runTimedOut).toBe(false);
     expect(initialState.runCrashed).toBe(false);
     expect(initialState.runSkipped).toBe(false);
+    expect(initialState.runOutput).toEqual([]);
   });
 });
 
@@ -321,19 +322,22 @@ describe("reducer", () => {
 
   // --- Run result ---
 
-  test("RUN_RESULT_RECEIVED stores raw stdout and stderr", () => {
+  test("RUN_RESULT_RECEIVED sets runOutput to parsed array", () => {
     const prev = { ...initialState };
     const state = reducer(prev, {
       type: Action.RUN_RESULT_RECEIVED,
-      stdout: "hello world",
-      stderr: "some error",
+      stdout: "[test] \u2714 42\n",
+      stderr: "",
       ranAt: "2026-03-05T00:00:00.000Z",
     });
-    expect(state.rawRunStdout).toBe("hello world");
-    expect(state.rawRunStderr).toBe("some error");
+    expect(state.rawRunStdout).toBe("[test] \u2714 42\n");
+    expect(state.rawRunStderr).toBe("");
+    expect(state.runOutput).toEqual([
+      { type: "result", label: "test", passed: true, actual: "42" },
+    ]);
   });
 
-  test("RUN_RESULT_RECEIVED updates lastRunAt, runTimedOut, runCrashed, runSkipped", () => {
+  test("RUN_RESULT_RECEIVED timeout produces [{ type: timeout }]", () => {
     const prev = { ...initialState };
     const state = reducer(prev, {
       type: Action.RUN_RESULT_RECEIVED,
@@ -344,11 +348,24 @@ describe("reducer", () => {
     });
     expect(state.lastRunAt).toBe("2026-03-05T12:00:00.000Z");
     expect(state.runTimedOut).toBe(true);
-    expect(state.runCrashed).toBe(false);
-    expect(state.runSkipped).toBe(false);
+    expect(state.runOutput).toEqual([{ type: "timeout" }]);
   });
 
-  test("RUN_RESULT_RECEIVED with skipped: true", () => {
+  test("RUN_RESULT_RECEIVED crashed produces [{ type: crashed }] plus parsed", () => {
+    const prev = { ...initialState };
+    const state = reducer(prev, {
+      type: Action.RUN_RESULT_RECEIVED,
+      crashed: true,
+      stdout: "[test] \u2714 42\n",
+      stderr: "fatal error\n",
+      ranAt: "2026-03-05T12:00:00.000Z",
+    });
+    expect(state.runCrashed).toBe(true);
+    expect(state.runOutput[0]).toEqual({ type: "crashed" });
+    expect(state.runOutput.length).toBeGreaterThan(1);
+  });
+
+  test("RUN_RESULT_RECEIVED skipped produces [{ type: skipped }]", () => {
     const prev = { ...initialState };
     const state = reducer(prev, {
       type: Action.RUN_RESULT_RECEIVED,
@@ -356,8 +373,7 @@ describe("reducer", () => {
       ranAt: "2026-03-05T12:00:00.000Z",
     });
     expect(state.runSkipped).toBe(true);
-    expect(state.runTimedOut).toBe(false);
-    expect(state.runCrashed).toBe(false);
+    expect(state.runOutput).toEqual([{ type: "skipped" }]);
   });
 
   test("RUN_RESULT_RECEIVED clears watcherError", () => {
@@ -378,14 +394,11 @@ describe("reducer", () => {
     expect(state.watcherError).toBeNull();
   });
 
-  test("TEST_RESULT_RECEIVED has no consoleOutput handling", () => {
-    const prev = { ...initialState };
-    const state = reducer(prev, {
-      type: Action.TEST_RESULT_RECEIVED,
-      consoleOutput: ["should be ignored"],
-    });
-    // State should not have consoleOutput field set from the action
-    expect(state).not.toHaveProperty("consoleOutput");
+  test("TEST_RESULT_RECEIVED does not modify runOutput", () => {
+    const existingOutput = [{ type: "result", label: "test", passed: true, actual: "42" }];
+    const prev = { ...initialState, runOutput: existingOutput };
+    const state = reducer(prev, { type: Action.TEST_RESULT_RECEIVED });
+    expect(state.runOutput).toBe(existingOutput);
   });
 
   // --- RUN_TESTS ---

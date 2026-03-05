@@ -53,8 +53,8 @@ The CLI (`runner/`) is a Node.js ESM app using React and Ink for terminal UI. It
 Screen components live in `runner/components/`. Each maps to a `Screen` constant and receives `dispatch` plus relevant state slices as props:
 
 - `MainMenu.jsx`, `ProblemSelect.jsx`, `LanguageSelect.jsx`, `CountdownPrompt.jsx`, `ResumeOrRestart.jsx`, `SessionActive.jsx`, `ProblemList.jsx`, `ProblemListDetail.jsx`, `StatsOverview.jsx`, `StatsDetail.jsx`, `ClearProblemSelect.jsx`, `ClearConfirm.jsx`, `ExportSkills.jsx`, `SettingsMenu.jsx`, `SettingsSection.jsx`, `SettingsEditField.jsx`
-- `SummaryLine.jsx` — Test results + timer display line
-- `ConsoleOutput.jsx` — Console output panel, shows solution `console.log` output from last test run, toggled by L keypress
+- `SummaryLine.jsx` — Run status, test results, and timer display line
+- `ConsoleOutput.jsx` — Run output panel, shows structured results from harness execution (pass/fail, errors, console.log), toggled by L keypress
 - `Header.jsx` — Reusable title + separator
 
 Interactive components use `Select`, `TextInput`, and `MultiSelect` from `@inkjs/ui`. Key handlers use Ink's `useInput`. Append-only messages (part completions, milestones) use Ink's `<Static>`.

@@ -80,6 +80,9 @@ export default function SessionActive({
   countdownSeconds,
   startPart,
   resumeData,
+  runOutput,
+  lastRunAt,
+  showLogs,
   rootDir,
 }) {
   const [testState, setTestState] = useState({
@@ -90,8 +93,6 @@ export default function SessionActive({
   const [timerDisplay, setTimerDisplay] = useState(null);
   const [messages, setMessages] = useState([]);
   const [errorMessage, setErrorMessage] = useState(null);
-  const [consoleOutput, setConsoleOutput] = useState([]);
-  const [showLogs, setShowLogs] = useState(false);
 
   const timerRef = useRef(null);
   const watcherRef = useRef(null);
@@ -335,11 +336,12 @@ export default function SessionActive({
         }
       }
     } else if (input === "t" || input === "T") {
+      dispatch({ type: Action.RUN_TESTS });
       if (watcherRef.current && watcherRef.current.runTests) {
         watcherRef.current.runTests();
       }
     } else if (input === "l" || input === "L") {
-      setShowLogs((prev) => !prev);
+      dispatch({ type: Action.TOGGLE_LOGS });
     }
   });
 
@@ -403,9 +405,11 @@ export default function SessionActive({
           timestamp={testState.timestamp}
           partInfo={partInfo}
           timerDisplay={timerDisplay}
+          runOutput={runOutput}
+          lastRunAt={lastRunAt}
         />
       )}
-      <ConsoleOutput lines={consoleOutput} visible={showLogs} />
+      <ConsoleOutput lines={runOutput} visible={showLogs} lastRunAt={lastRunAt} />
       {errorMessage ? (
         <Text color="red">{"  "}Runner error: {errorMessage} {"\u2014"} save again to retry</Text>
       ) : null}

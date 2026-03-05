@@ -4,8 +4,7 @@ import {
   formatTimerSegment,
   formatGlobalStats,
   formatProblemStats,
-  parseConsoleOutput,
-  parsePytestConsoleOutput,
+  formatRunOutput,
 } from "../../runner/format.js";
 
 // Strip ANSI escape codes for content assertions
@@ -176,201 +175,106 @@ describe("formatProblemStats", () => {
   });
 });
 
-// --- Console output parsing (Jest) ---
+// --- formatRunOutput ---
 
-describe("parseConsoleOutput", () => {
-  test("returns [] for empty string input", () => {
-    expect(parseConsoleOutput("")).toEqual([]);
+describe("formatRunOutput", () => {
+  test("returns [] for empty stdout and stderr", () => {
+    expect(formatRunOutput("", "")).toEqual([]);
   });
 
-  test("returns [] for null/undefined input", () => {
-    expect(parseConsoleOutput(null)).toEqual([]);
-    expect(parseConsoleOutput(undefined)).toEqual([]);
-  });
-
-  test("returns [] for Jest output with no console blocks", () => {
-    const stdout = "PASS problems/test/suite.test.js\nTests: 3 passed, 3 total\n";
-    expect(parseConsoleOutput(stdout)).toEqual([]);
-  });
-
-  test("parses a single console.log line correctly", () => {
-    const stdout = [
-      "  console.log",
-      "    the value is 42",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:5:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    expect(parseConsoleOutput(stdout)).toEqual(["[log] the value is 42"]);
-  });
-
-  test("parses multiple console.log calls correctly", () => {
-    const stdout = [
-      "  console.log",
-      "    first line",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:5:9)",
-      "",
-      "  console.log",
-      "    second line",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:8:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    expect(parseConsoleOutput(stdout)).toEqual([
-      "[log] first line",
-      "[log] second line",
+  test("parses passed result line", () => {
+    const stdout = "[basic case] \u2714 [30, 60, -1]\n";
+    const result = formatRunOutput(stdout, "");
+    expect(result).toEqual([
+      { type: "result", label: "basic case", passed: true, actual: "[30, 60, -1]" },
     ]);
   });
 
-  test("prefixes [error] for console.error blocks", () => {
-    const stdout = [
-      "  console.error",
-      "    something broke",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:3:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    expect(parseConsoleOutput(stdout)).toEqual(["[error] something broke"]);
-  });
-
-  test("prefixes [warn] for console.warn blocks", () => {
-    const stdout = [
-      "  console.warn",
-      "    be careful",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:3:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    expect(parseConsoleOutput(stdout)).toEqual(["[warn] be careful"]);
-  });
-
-  test("handles multi-line console output", () => {
-    const stdout = [
-      "  console.log",
-      "    { a: 1,",
-      "      b: 2 }",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:5:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    const result = parseConsoleOutput(stdout);
-    expect(result).toEqual(["[log] { a: 1,", "[log]   b: 2 }"]);
-  });
-
-  test("strips leading whitespace from message lines", () => {
-    const stdout = [
-      "  console.log",
-      "    hello world",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:5:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    expect(parseConsoleOutput(stdout)).toEqual(["[log] hello world"]);
-  });
-
-  test("does not include at Object lines in output", () => {
-    const stdout = [
-      "  console.log",
-      "    test output",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:5:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    const result = parseConsoleOutput(stdout);
-    expect(result.some((l) => l.includes("at Object"))).toBe(false);
-  });
-
-  test("handles mixed console methods in one stdout string", () => {
-    const stdout = [
-      "  console.log",
-      "    log line",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:2:9)",
-      "",
-      "  console.error",
-      "    error line",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:3:9)",
-      "",
-      "  console.warn",
-      "    warn line",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:4:9)",
-      "",
-      "  console.info",
-      "    info line",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:5:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    expect(parseConsoleOutput(stdout)).toEqual([
-      "[log] log line",
-      "[error] error line",
-      "[warn] warn line",
-      "[info] info line",
+  test("parses failed result line with expected", () => {
+    const stdout = "[basic case] \u2718 [-1, -1, 20] (expected [-1, -1])\n";
+    const result = formatRunOutput(stdout, "");
+    expect(result).toEqual([
+      { type: "result", label: "basic case", passed: false, actual: "[-1, -1, 20]", expected: "[-1, -1]" },
     ]);
   });
 
-  test("ignores console blocks from non-workspace paths", () => {
-    const stdout = [
-      "  console.log",
-      "    internal jest message",
-      "      at Object.<anonymous> (node_modules/jest-runner/lib/index.js:5:9)",
-      "",
-      "  console.log",
-      "    user output",
-      "      at Object.<anonymous> (workspace/test-problem/main.js:5:9)",
-      "",
-      "Tests: 1 passed, 1 total",
-    ].join("\n");
-    expect(parseConsoleOutput(stdout)).toEqual(["[log] user output"]);
-  });
-});
-
-// --- Console output parsing (pytest) ---
-
-describe("parsePytestConsoleOutput", () => {
-  test("returns [] for empty string", () => {
-    expect(parsePytestConsoleOutput("")).toEqual([]);
-  });
-
-  test("returns [] for null/undefined input", () => {
-    expect(parsePytestConsoleOutput(null)).toEqual([]);
-    expect(parsePytestConsoleOutput(undefined)).toEqual([]);
-  });
-
-  test("returns [] for pytest output with no captured stdout section", () => {
-    const stdout = "PASSED test_sample.py::test_basic\n1 passed in 0.5s\n";
-    expect(parsePytestConsoleOutput(stdout)).toEqual([]);
-  });
-
-  test("extracts lines from Captured stdout call section", () => {
-    const stdout = [
-      "FAILED test_sample.py::test_basic",
-      "--- Captured stdout call ---",
-      "hello from print",
-      "another line",
-      "--- Captured stderr call ---",
-      "1 failed in 0.5s",
-    ].join("\n");
-    expect(parsePytestConsoleOutput(stdout)).toEqual([
-      "hello from print",
-      "another line",
+  test("parses unlabeled line as log", () => {
+    const stdout = "hello from inside\n";
+    const result = formatRunOutput(stdout, "");
+    expect(result).toEqual([
+      { type: "log", label: null, content: "hello from inside" },
     ]);
   });
 
-  test("handles multiple captured sections", () => {
-    const stdout = [
-      "FAILED test_sample.py::test_one",
-      "--- Captured stdout call ---",
-      "output from test one",
-      "=== FAILURES ===",
-      "FAILED test_sample.py::test_two",
-      "--- Captured stdout call ---",
-      "output from test two",
-      "=== short test summary ===",
-    ].join("\n");
-    expect(parsePytestConsoleOutput(stdout)).toEqual([
-      "output from test one",
-      "output from test two",
+  test("parses result with no checkmark or X as passed: null", () => {
+    const stdout = "[no expected] [30, 60, -1]\n";
+    const result = formatRunOutput(stdout, "");
+    expect(result).toEqual([
+      { type: "result", label: "no expected", passed: null, actual: "[30, 60, -1]" },
     ]);
+  });
+
+  test("identifies error lines by ErrorClass pattern", () => {
+    const stdout = "[basic case] TypeError: mod.fn is not a function\n";
+    const result = formatRunOutput(stdout, "");
+    expect(result).toEqual([
+      { type: "error", label: "basic case", content: "TypeError: mod.fn is not a function" },
+    ]);
+  });
+
+  test("parses stderr lines as type stderr", () => {
+    const result = formatRunOutput("", "SyntaxError: Unexpected token\n");
+    expect(result).toEqual([
+      { type: "stderr", label: null, content: "SyntaxError: Unexpected token" },
+    ]);
+  });
+
+  test("handles interleaved user logs and labeled results in order", () => {
+    const stdout = "debug info\n[case 1] \u2714 42\nmore debug\n[case 2] \u2718 0 (expected 1)\n";
+    const result = formatRunOutput(stdout, "");
+    expect(result).toEqual([
+      { type: "log", label: null, content: "debug info" },
+      { type: "result", label: "case 1", passed: true, actual: "42" },
+      { type: "log", label: null, content: "more debug" },
+      { type: "result", label: "case 2", passed: false, actual: "0", expected: "1" },
+    ]);
+  });
+
+  test("truncates actual at 200 chars with ellipsis", () => {
+    const longValue = "x".repeat(250);
+    const stdout = `[test] \u2714 ${longValue}\n`;
+    const result = formatRunOutput(stdout, "");
+    expect(result[0].actual).toHaveLength(201);
+    expect(result[0].actual.endsWith("\u2026")).toBe(true);
+  });
+
+  test("truncates content at 200 chars with ellipsis", () => {
+    const longContent = "y".repeat(250);
+    const stdout = `${longContent}\n`;
+    const result = formatRunOutput(stdout, "");
+    expect(result[0].content).toHaveLength(201);
+    expect(result[0].content.endsWith("\u2026")).toBe(true);
+  });
+
+  test("does not truncate strings under 200 chars", () => {
+    const value = "z".repeat(100);
+    const stdout = `[test] \u2714 ${value}\n`;
+    const result = formatRunOutput(stdout, "");
+    expect(result[0].actual).toBe(value);
+  });
+
+  test("multi-line stderr becomes separate entries", () => {
+    const result = formatRunOutput("", "line one\nline two\nline three\n");
+    expect(result).toEqual([
+      { type: "stderr", label: null, content: "line one" },
+      { type: "stderr", label: null, content: "line two" },
+      { type: "stderr", label: null, content: "line three" },
+    ]);
+  });
+
+  test("empty stderr produces no stderr entries", () => {
+    const result = formatRunOutput("[test] \u2714 ok\n", "");
+    expect(result.filter((e) => e.type === "stderr")).toHaveLength(0);
   });
 });
 

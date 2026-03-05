@@ -30,13 +30,29 @@ export default function ProblemListDetail({ dispatch, problem, config, status })
       {config.parts ? (
         <>
           <Text>{""}</Text>
-          {config.parts.map((part, i) => (
-            <React.Fragment key={i}>
-              <Text bold>{"  "}Part {i + 1}: {part.title || "Untitled"}</Text>
-              {part.description ? <Text>{"    "}{part.description}</Text> : null}
-              <Text>{""}</Text>
-            </React.Fragment>
-          ))}
+          {config.parts.map((part, i) => {
+            const examples = (part.runInputs || []).filter(
+              (r) => r && r.function && r.label && Array.isArray(r.args)
+            );
+            return (
+              <React.Fragment key={i}>
+                <Text bold>{"  "}Part {i + 1}: {part.title || "Untitled"}</Text>
+                {part.description ? <Text>{"    "}{part.description}</Text> : null}
+                {examples.length > 0 ? (
+                  <>
+                    <Text dimColor>{"    "}Examples:</Text>
+                    {examples.map((ex, j) => {
+                      const argsStr = ex.args.map((a) => JSON.stringify(a)).join(", ");
+                      return (
+                        <Text key={j} dimColor>{"      "}{ex.function}({argsStr}){"   "}{"\u2014"} {ex.label}</Text>
+                      );
+                    })}
+                  </>
+                ) : null}
+                <Text>{""}</Text>
+              </React.Fragment>
+            );
+          })}
         </>
       ) : null}
 

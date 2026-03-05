@@ -86,16 +86,21 @@ The countdown prompt appears. If the problem has a suggested time, it pre-popula
 
 VS Code opens (if available) with your solution file. The CLI shows the session screen with:
 - The current part title and description
-- A controls hint line (save to test, pause, quit)
-- A summary line with test results, last run time, and timer
+- A controls hint line (save to run, T to test, pause, quit)
+- A summary line with run results, test results, and timer
 
-Auto-save is disabled in the practice VS Code workspace intentionally. Saves are manual so you control exactly when tests run — use **Cmd+S** (Mac) or **Ctrl+S** (Windows/Linux) to save and trigger a test run. If a test run appears to hang after saving, the runner will automatically kill the test process after 20 seconds and display a timeout warning. This most commonly happens with infinite loops. Adjust `testTimeoutSeconds` in `runner.config.json` if you need a longer timeout.
+Auto-save is disabled in the practice VS Code workspace intentionally. Saves are manual so you control exactly when code runs — use **Cmd+S** (Mac) or **Ctrl+S** (Windows/Linux) to save and trigger a run. If a run appears to hang after saving, the runner will automatically kill the process after 20 seconds and display a timeout warning. This most commonly happens with infinite loops. Adjust `testTimeoutSeconds` in `runner.config.json` if you need a longer timeout.
 
-Open the workspace file in your editor and start implementing the function. When you save the file, the CLI detects the change and runs the test suite automatically. Results appear in the summary line within a few seconds. If the problem defines example inputs, your solution also runs against those on every save — results and pass/fail appear in the console panel (press **L** to show). This is separate from the test suite.
+Open the workspace file in your editor and start implementing the function. Saving and testing are separate actions:
 
-#### Console Output
+- **Save** (Cmd+S / Ctrl+S) runs your solution against example inputs defined in the problem. Results appear in the run output panel (press **L** to show). If the problem defines expected values for its examples, the panel shows pass/fail indicators. Any `console.log` output from your solution also appears here.
+- **T** runs the full test suite. Results appear in the summary line. Part progression only happens when tests pass.
 
-Press **L** during a session to toggle the console output panel. The panel shows `console.log`, `console.error`, `console.warn`, and `console.info` calls from your solution code, captured from the most recent test run. If output exceeds 10 lines, the panel shows the last 10 with a count indicator. The panel stays open between test runs until you press **L** again to close it.
+Press **T** when you are ready to check your work against the test suite. The summary line shows both the most recent run status and the test results.
+
+#### Run Output
+
+Press **L** during a session to toggle the run output panel. The panel shows results from the most recent save — example input/output with pass/fail indicators, any `console.log` calls from your solution, and error messages. The panel stays open between runs until you press **L** again to close it.
 
 ### 6. Pass Tests and Advance
 
