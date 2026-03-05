@@ -15,7 +15,7 @@ Output media/output/settings-edit.gif
 
 Set FontSize 13
 Set Width 1100
-Set Height 650
+Set Height 440
 Set Theme "Dracula"
 Set PlaybackSpeed 0.75
 Set TypingSpeed 80ms
