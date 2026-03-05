@@ -63,11 +63,7 @@ The problem picker shows each problem's title, description, and a status badge i
 
 Existing sessions prompt you to **resume** (restore your file and timer state) or **restart from scratch** (overwrite with the Part 1 scaffold). During a session, press **P** to pause/resume the timer and **Q** to save and return to the menu. Ctrl+C also saves the session before exiting.
 
-<!-- TODO: GIF — record a ~15-second session showing: select a problem, pick JS, press
-     Enter for stopwatch mode, then make a save that triggers test output. Capture at
-     80x24 in a dark theme. The GIF should show the summary line updating with pass/fail
-     counts and the timer ticking. Use a tool like vhs or asciinema. -->
-<!-- ![Session in action](docs/media/session-active.gif) -->
+![Session in action](docs/media/session-active.gif)
 
 ### :bar_chart: Stats
 
@@ -141,10 +137,7 @@ The repo includes an agent skills system for AI-powered problem generation, prog
 
 Four skills are available: `/setup-config` creates your personal `config.json`, `/generate-problem` produces complete problem definitions with test suites, `/hint` provides tiered hints during a session, and `/review-solution` delivers structured feedback on completed solutions.
 
-<!-- TODO: Screenshot — capture the terminal after running /generate-problem showing the
-     concept proposal phase (title, description, parts overview, difficulty). Use a real
-     generated problem, not a mock. Dark terminal theme, ~100x30 to fit the full proposal. -->
-<!-- ![Problem generation](docs/media/generate-problem.png) -->
+![Problem generation](docs/media/generate-problem.png)
 
 See [docs/agent-skills.md](docs/agent-skills.md) for the full reference — prerequisites, agent-specific invocation instructions (Claude Code, Cursor, GitHub Copilot, Aider), Surprise Me mode, and troubleshooting.
 
