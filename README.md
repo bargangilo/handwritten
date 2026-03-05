@@ -16,6 +16,20 @@ The repo also includes an agent skills system — point any AI coding agent at t
 
 ---
 
+## Table of Contents
+
+- [Quick Start](#quick-start)
+- [Prerequisites](#prerequisites)
+- [How It Works](#how-it-works)
+- [Features](#features)
+- [Agent Skills](#agent-skills)
+- [Project Structure](#project-structure)
+- [Adding Problems](#adding-problems)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+
+---
+
 ## Quick Start
 
 ```bash
@@ -87,6 +101,18 @@ Exports agent skill files from `.claude/skills/` to `.agents/skills/` for use wi
 
 ---
 
+## Agent Skills
+
+The repo includes an agent skills system for AI-powered problem generation, progressive hints, and solution review. Skills are instruction documents that any AI coding agent can execute — they read configuration and problem data from the filesystem, generate new problems and test suites, and provide feedback on solutions. The CLI has zero dependency on the agent skills system; it does not require an API key and never invokes an agent at runtime.
+
+Four skills are available: `/setup-config` creates your personal `config.json`, `/generate-problem` produces complete problem definitions with test suites, `/hint` provides tiered hints during a session, and `/review-solution` delivers structured feedback on completed solutions.
+
+![Problem generation](docs/media/generate-problem.png)
+
+See [docs/agent-skills.md](docs/agent-skills.md) for the full reference — prerequisites, agent-specific invocation instructions (Claude Code, Cursor, GitHub Copilot, Aider), Surprise Me mode, and troubleshooting.
+
+---
+
 ## Project Structure
 
 ```
@@ -128,18 +154,6 @@ problems/<name>/
 The `parts` array in `problem.json` defines each part's title, description, `activeTests` (test names to run), and `scaffold` (starter code). Test names use spaces in `activeTests`; Jest matches them directly, and pytest function names mirror them with underscores prefixed by `test_`. Test files import from `../../workspace/<name>/main`, not from `problems/`.
 
 See [docs/problem-schema.md](docs/problem-schema.md) for the full schema reference, worked examples, and common mistakes.
-
----
-
-## Agent Skills
-
-The repo includes an agent skills system for AI-powered problem generation, progressive hints, and solution review. Skills are instruction documents that any AI coding agent can execute — they read configuration and problem data from the filesystem, generate new problems and test suites, and provide feedback on solutions. The CLI has zero dependency on the agent skills system; it does not require an API key and never invokes an agent at runtime.
-
-Four skills are available: `/setup-config` creates your personal `config.json`, `/generate-problem` produces complete problem definitions with test suites, `/hint` provides tiered hints during a session, and `/review-solution` delivers structured feedback on completed solutions.
-
-![Problem generation](docs/media/generate-problem.png)
-
-See [docs/agent-skills.md](docs/agent-skills.md) for the full reference — prerequisites, agent-specific invocation instructions (Claude Code, Cursor, GitHub Copilot, Aider), Surprise Me mode, and troubleshooting.
 
 ---
 
