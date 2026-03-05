@@ -354,6 +354,8 @@ Run through this checklist before writing any files. Every answer must match the
 18. Are `expected` values accurate — verified by tracing through a correct solution? **Must be Yes.**
 19. Are run inputs illustrative without duplicating test inputs exactly? **Must be Yes.**
 20. Is the run inputs count 2-3 per part? **Must be Yes.**
+21. Does every generated `runInputs` entry include an `expected` field? **Must be Yes.**
+22. For "both" language config: does each scenario have matching JS and Python entries with correct naming conventions? **Must be Yes if applicable.**
 
 ---
 

@@ -96,7 +96,9 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
    e. **Expected minutes** — the value, with a brief note on how it relates to the difficulty.
 
-   Present this proposal and ask: "Does this concept look good, or would you like any changes?" Wait for explicit approval. If the user requests changes, revise the proposal and present it again. Do not proceed to step 4 without approval.
+   f. **Run inputs preview (Part 1)** — show 2-3 representative function calls with expected return values for Part 1. Format each line as: `functionName(args)   — label → expected`. The user should verify expected values are correct before approving. For multi-part problems, only show Part 1 run inputs in the proposal — later parts' run inputs are generated in step 5.
+
+   Present this proposal and ask: "Does this concept look good, or would you like any changes?" Wait for explicit approval. If the user requests changes — including corrections to run input expected values — revise the proposal and present it again. Do not proceed to step 4 without approval.
 
    **If `hideProblemDetails.enabled` is true:**
 
@@ -126,6 +128,15 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
      - Descriptions: Rule 4 (input/output, not mechanism).
      - activeTests: Section 3 rules (accumulation, exact matching).
      - Scaffolds: Rule 6 and Section 4 (no hints, additive exports for Part 2+).
+     - `runInputs` — for each part, generate 2-3 representative function calls with expected return values. This is an explicit substep — do not skip it:
+       - Choose representative inputs, not edge cases. Keep args small — arrays of 4-6 elements for most problems.
+       - Labels: 2-5 words, scenario-descriptive, not output-descriptive.
+       - `expected` is required on every generated entry — never omit it.
+       - Verify `expected` by tracing through the correct algorithm with the given `args` before writing it. An incorrect `expected` shows a false failure on every save.
+       - `function` name must exactly match the scaffold export — re-read the scaffold before writing run inputs.
+       - All `args` and `expected` values must be JSON-serializable.
+       - Do not use inputs identical to any test case.
+       - Language handling: generate entries for the active language from config. If "both", generate matching JS and Python pairs per scenario with correct naming conventions for each (`findBestSeats` for JS, `find_best_seats` for Python).
 
 6. **Generate test suite(s).**
 
@@ -161,6 +172,8 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
    18. Are `expected` values accurate — verified by tracing through a correct solution? **Must be Yes.**
    19. Are run inputs illustrative without duplicating test inputs exactly? **Must be Yes.**
    20. Is the run inputs count 2-3 per part? **Must be Yes.**
+   21. Does every generated `runInputs` entry include an `expected` field? **Must be Yes.**
+   22. For "both" language config: does each scenario have matching JS and Python entries with correct naming conventions? **Must be Yes if applicable.**
 
    If any item fails, revise the relevant file(s) and re-check the failing item(s). Do not write files until every item passes.
 
@@ -214,6 +227,7 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
    - The language(s) generated
    - The `expectedMinutes` value
    - Topics, style, and overall difficulty
+   - Total run inputs generated and how many have `expected` values (e.g. "4 run inputs across 2 parts, all with expected values")
    - "Run `yarn start` and select this problem to begin."
 
    Never mention part count or per-part details in the summary, regardless of config.

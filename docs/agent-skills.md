@@ -116,7 +116,9 @@ Use this when you first clone the repo, when you want to change your practice fo
 
 ### `/handwritten-generate`
 
-Generates a complete interview problem in two phases. First, it proposes a concept — title, description, parts overview, difficulty rating, and expected time — and waits for your approval. After approval, it generates the full `problem.json` and test suites, runs a mandatory 15-item quality checklist, and writes the files to `problems/`.
+Generates a complete interview problem in two phases. First, it proposes a concept — title, description, parts overview, difficulty rating, expected time, and run inputs preview — and waits for your approval. After approval, it generates the full `problem.json` and test suites, runs a mandatory 22-item quality checklist, and writes the files to `problems/`.
+
+The skill generates `runInputs` for each part alongside the test suite. These are representative function calls with expected return values, executed on every file save during a session. Results and pass/fail appear in the console panel (L to show). Run inputs are also shown as Examples in the problem description before the session starts. The skill verifies every `expected` value before writing it — an incorrect expected value is treated as a generation error by the self-check checklist.
 
 If Surprise Me mode is enabled in your config, the skill uses randomized parameters (topics, style, difficulty, part count) so you do not know what to expect. The randomization seed is logged so you can reproduce a generation with the same parameters.
 
