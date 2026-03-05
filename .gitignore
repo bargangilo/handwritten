@@ -8,6 +8,13 @@ config.json
 workspace/*
 !workspace/.gitkeep
 
+# Agent-generated problems (keep pre-packaged ones, ignore new generations)
+problems/*
+!problems/sample-problem/
+!problems/flatten-and-sum/
+!problems/best-available-seat/
+!problems/meeting-room-finder/
+
 # Agent skill draft payloads
 .agents/.draft/*.json
 
