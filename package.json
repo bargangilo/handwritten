@@ -6,7 +6,9 @@
   "description": "Hot-reload practice environment for handwritten coding interview problems",
   "scripts": {
     "start": "tsx runner/index.js",
-    "test": "jest"
+    "test": "jest",
+    "media": "bash scripts/generate-media.sh",
+    "media:dry-run": "bash scripts/generate-media.sh --dry-run"
   },
   "jest": {
     "testPathIgnorePatterns": [

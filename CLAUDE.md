@@ -102,6 +102,14 @@ When renaming anything — a file, a folder, a concept — grep all markdown fil
 
 If a feature is complex enough to affect the tool's mental model, it warrants a `docs/` file. Use the existing docs as calibration for what level of complexity earns its own file. New `docs/` files must be linked from the README on creation.
 
+### Media Generation
+
+Media lives in `media/output/` and is committed to git — GitHub renders GIFs inline in the README. Tapes live in `media/tapes/`, one tape per distinct screen or flow. Fixtures live in `media/fixtures/` and define the CLI state used during recording.
+
+To regenerate all media: `yarn media` (requires [VHS](https://github.com/charmbracelet/vhs)). The script backs up your real `config.json` and `workspace/`, installs fixtures, runs all tapes, then restores your state via an EXIT trap.
+
+When adding a new screen: add a tape file, add fixture state if needed, add the output reference to the README, and run `yarn media`. When the `session.json` or `config.json` schema changes, update the corresponding fixture files in `media/fixtures/`. Screenshots are produced by `Screenshot` commands within tape files — never record a separate tape just to get a static image.
+
 ### README Style and Presentation
 
 The README has an ASCII art title block at the top — preserve it when making other changes; do not replace it with plain text. Media placeholder blocks (HTML comments with `TODO` directions for screenshots/GIFs) are intentional stubs — do not remove them. If actual media files are added in the future, update the stubs to real image references.

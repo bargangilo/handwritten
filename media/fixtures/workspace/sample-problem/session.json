@@ -1,0 +1,14 @@
+{
+  "lastStarted": "2026-03-03T14:22:00.000Z",
+  "totalElapsedSeconds": 503,
+  "currentPartElapsedSeconds": 503,
+  "isPaused": false,
+  "pausedAt": null,
+  "totalPausedSeconds": 0,
+  "mode": "stopwatch",
+  "countdownSeconds": null,
+  "completed": false,
+  "currentPart": 0,
+  "splits": [],
+  "attempts": []
+}

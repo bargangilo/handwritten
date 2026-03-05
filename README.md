@@ -41,7 +41,7 @@ yarn start                       # launches the CLI
 
 On first run, pick a problem, choose a language, and start editing the workspace file. Tests run on save.
 
-![Main menu](docs/media/main-menu.png)
+![Main menu](media/output/main-menu.png)
 
 ## Prerequisites
 
@@ -77,7 +77,7 @@ The problem picker shows each problem's title, description, and a status badge i
 
 Existing sessions prompt you to **resume** (restore your file and timer state) or **restart from scratch** (overwrite with the Part 1 scaffold). During a session, press **P** to pause/resume the timer and **Q** to save and return to the menu. Ctrl+C also saves the session before exiting.
 
-![Session in action](docs/media/session-active.gif)
+![Session in action](media/output/session-active.gif)
 
 ### :bar_chart: Stats
 
@@ -93,7 +93,24 @@ A read-only browser for all available problems. Select any problem to see its fu
 
 ### :gear: Settings
 
-A built-in settings editor for `config.json`, driven entirely by `.agents/config-schema.json`. Browse sections (topics, difficulty, style, language, parts, etc.), view current values, and edit any field with immediate save on confirmation. The settings menu reads field definitions from the schema at runtime — new config options added to the schema automatically appear here. Works without an existing `config.json` (uses schema defaults) and without a schema file (displays a message and returns to the menu).
+![Handwritten settings menu](media/output/settings-menu.gif)
+
+The Settings menu is a built-in CLI editor for `config.json`. It reads field definitions from `.agents/config-schema.json` at runtime, so the menu always reflects the current schema — new config options added to the schema file appear here automatically. Browse sections, view current values, and edit any field with immediate save on confirmation. Works without an existing `config.json` (uses schema defaults) and without a schema file (displays a message and returns to the menu). The same settings can also be configured by running `/handwritten-config` from an AI agent.
+
+| Section | What It Controls | Configured Via |
+|---|---|---|
+| Topics | CS and programming concepts that appear in generated problems | Settings menu / `/handwritten-config` |
+| Difficulty | Difficulty range across algorithm, data structure, and problem complexity (1-5) | Settings menu / `/handwritten-config` |
+| Style | Problem framing: LeetCode (abstract), real-world (domain context), or mixed | Settings menu / `/handwritten-config` |
+| Language | Which programming languages have test suites generated | Settings menu / `/handwritten-config` |
+| Parts | How many progressive parts generated problems have | Settings menu / `/handwritten-config` |
+| Surprise Me | Whether generation parameters are randomized or asked interactively | Settings menu / `/handwritten-config` |
+| Hide Problem Details | What information is visible during and after problem generation | Settings menu / `/handwritten-config` |
+| Time Range | Range of expected problem-solving times in minutes | Settings menu / `/handwritten-config` |
+
+![Editing a settings field](media/output/settings-edit.gif)
+
+Editing the Topics field directly from the CLI.
 
 ### :wastebasket: Clear a Problem
 
@@ -134,6 +151,11 @@ runner/                      # CLI source (Node.js ESM, React/Ink)
 tests/                       # Unit tests (yarn test)
   runner/                    #   CLI logic tests
   scripts/                   #   Agent script tests
+media/                       # Screenshots and GIFs for README (regenerate with yarn media)
+  tapes/                     #   VHS tape definitions
+  fixtures/                  #   CLI state fixtures used during recording
+  output/                    #   Generated screenshots and GIFs (committed)
+scripts/                     # Repository utility scripts
 docs/                        # Reference documentation
 config.json                  # User-specific settings (gitignored) — copy from config.example.json
 ```
