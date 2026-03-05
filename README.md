@@ -128,7 +128,7 @@ The repo includes an agent skills system for AI-powered problem generation, prog
 
 Four skills are available: `/handwritten-config` creates your personal `config.json`, `/handwritten-generate` produces complete problem definitions with test suites, `/handwritten-hint` provides tiered hints during a session, and `/handwritten-review` delivers structured feedback on completed solutions.
 
-![Problem generation](docs/media/generate-problem.png)
+![Problem generation](media/output/generate-problem.png)
 
 See [docs/agent-skills.md](docs/agent-skills.md) for the full reference — prerequisites, agent-specific invocation instructions (Claude Code, Cursor, GitHub Copilot, Aider), Surprise Me mode, and troubleshooting.
 

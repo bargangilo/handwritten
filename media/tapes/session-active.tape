@@ -56,6 +56,10 @@ Sleep 1.5s
 
 # Resume/Restart: Resume where you left off (first option)
 Enter
+Sleep 1.5s
+
+# Countdown prompt: press Enter for stopwatch mode (resume still passes through here)
+Enter
 Sleep 3s
 
 # Session screen is now visible with timer running from ~8:23
