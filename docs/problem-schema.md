@@ -42,6 +42,106 @@ Each entry in the `parts` array defines one stage of the problem.
 | `activeTests` | string[] | **Yes** | Test names to run when this part is active. Must be non-empty. See [activeTests Behavior](#activetests-behavior) for matching rules. |
 | `scaffold.js` | string | No | JavaScript starter code for this part. Written to the workspace file on start (Part 1) or appended on advancement (Part 2+). |
 | `scaffold.python` | string | No | Python starter code for this part. Same write/append behavior as `scaffold.js`. |
+| `runInputs` | array | No | Representative function calls executed on every save and shown as Examples. See [runInputs](#runinputs). |
+
+## `runInputs`
+
+### Purpose and Behavior
+
+Run inputs serve three roles. They populate the Examples section in the problem description screen before the session starts. They execute on every file save during a session to give immediate run feedback. When `expected` is provided, they give pass/fail feedback on representative cases without revealing the full test suite structure.
+
+### Field Reference
+
+| Field | Type | Required | Valid Values | Description |
+|---|---|---|---|---|
+| `label` | string | Yes | 2-5 word scenario name | Display name in the console panel and Examples section. Describes the scenario, not the expected output. |
+| `language` | string | Yes | `"javascript"` or `"python"` | The CLI filters by active session language at harness generation time. |
+| `function` | string | Yes | Exact exported function name | Must match the scaffold export character for character, including case. |
+| `args` | array | Yes | JSON-serializable values | Arguments passed to the function in order. Each element corresponds to one parameter. |
+| `expected` | any | No | JSON-serializable value | Expected return value. When present, the harness performs a deep equality check. When absent, return value is shown with no pass/fail indicator. |
+
+### Pass/Fail Behavior
+
+When `expected` is present, the harness performs a deep equality check between the actual return value and `expected`. The console panel shows a green checkmark for pass or a red X for fail alongside the actual return value. Deep equality uses structural comparison — `[1, 2, 3]` equals `[1, 2, 3]` regardless of reference.
+
+When `expected` is absent, only the return value is shown with no pass/fail indicator. Run pass/fail is independent of test suite pass/fail — a run input can pass while tests still fail (if edge cases are failing) or vice versa.
+
+### Console Output Behavior
+
+Any `console.log` calls inside the solution function fire during the run and appear in the console panel above the labeled return value line for the call that triggered them.
+
+### Per-Part Accumulation
+
+`runInputs` is per-part, not top-level. When multiple parts are unlocked, the harness accumulates run inputs from all unlocked parts in order. Part 1 run inputs continue executing when Part 2 is active. Part 1 inputs should remain meaningful in the context of later parts.
+
+If `runInputs` is absent or empty on all unlocked parts, the CLI skips run-on-save silently. Existing problems without `runInputs` work normally.
+
+### Language Parity
+
+For both-language problems, provide matching JS and Python entries per scenario with appropriate naming conventions (`findBestSeats` for JS, `find_best_seats` for Python). For JS-only problems, only JS entries are needed.
+
+### The `args` and `expected` Constraint
+
+Both `args` and `expected` must be JSON-serializable. The following are not allowed: functions, `undefined`, `NaN`, `Infinity`, circular references, class instances. Arrays, plain objects, strings, numbers, booleans, and `null` are all valid.
+
+### Authoring Guidelines
+
+Include 2-3 inputs per part. Inputs should be representative of the common case, not edge cases — they are visible to the user before solving. Do not use inputs identical to any test case. Keep args small (arrays of 4-6 elements). The `expected` value must be accurate — an incorrect `expected` produces a false failure on every save.
+
+### Worked Example
+
+A two-part problem showing `runInputs` on both parts with `expected` values:
+
+```json
+{
+  "parts": [
+    {
+      "title": "Flatten a nested array",
+      "activeTests": ["already flat array", "single level nesting", "deep nesting", "empty array", "mixed depth"],
+      "scaffold": { "js": "..." },
+      "runInputs": [
+        {
+          "label": "mixed nesting",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[1, [2, 3], [4, [5]]]],
+          "expected": [1, 2, 3, 4, 5]
+        },
+        {
+          "label": "nested pairs",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[1, [2]], 3, [[4]]]],
+          "expected": [1, 2, 3, 4]
+        }
+      ]
+    },
+    {
+      "title": "Sum nested elements without flattening",
+      "activeTests": ["already flat array", "...", "large nested structure"],
+      "scaffold": { "js": "..." },
+      "runInputs": [
+        {
+          "label": "four levels deep",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[1, [2, [3, [4]]]]],
+          "expected": 10
+        },
+        {
+          "label": "grouped tens",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[[10], [20, [30]]]],
+          "expected": 60
+        }
+      ]
+    }
+  ]
+}
+```
+
+Part 1's `flattenArray` run inputs continue executing when Part 2 unlocks. Part 2 adds `sumNested` run inputs. The `function` field matches the scaffold export exactly. All `args` and `expected` values are JSON-serializable. No input duplicates a test case.
 
 ## `activeTests` Behavior
 
@@ -174,7 +274,23 @@ A two-part problem called `flatten-and-sum`. Part 1 asks the user to flatten a n
       "scaffold": {
         "js": "function flattenArray(arr) {\n  // TODO: implement\n}\n\nmodule.exports = { flattenArray };\n",
         "python": "def flatten_array(arr: list) -> list:\n    pass\n"
-      }
+      },
+      "runInputs": [
+        {
+          "label": "mixed nesting",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[1, [2, 3], [4, [5]]]],
+          "expected": [1, 2, 3, 4, 5]
+        },
+        {
+          "label": "nested pairs",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[1, [2]], 3, [[4]]]],
+          "expected": [1, 2, 3, 4]
+        }
+      ]
     },
     {
       "title": "Sum nested elements without flattening",
@@ -194,7 +310,23 @@ A two-part problem called `flatten-and-sum`. Part 1 asks the user to flatten a n
       "scaffold": {
         "js": "\nfunction sumNested(arr) {\n  // TODO: implement\n}\n\nmodule.exports.sumNested = sumNested;\n",
         "python": "\ndef sum_nested(arr: list) -> int:\n    pass\n"
-      }
+      },
+      "runInputs": [
+        {
+          "label": "four levels deep",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[1, [2, [3, [4]]]]],
+          "expected": 10
+        },
+        {
+          "label": "grouped tens",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[[10], [20, [30]]]],
+          "expected": 60
+        }
+      ]
     }
   ]
 }

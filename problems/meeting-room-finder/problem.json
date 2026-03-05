@@ -31,7 +31,31 @@
       "scaffold": {
         "js": "/**\n * Find the best available meeting room for each request.\n *\n * @param {{id: string, capacity: number}[]} rooms - Available rooms\n * @param {{roomId: string, start: number, end: number}[]} bookings - Existing bookings\n * @param {{start: number, end: number, minCapacity: number}[]} requests - Meeting requests\n * @returns {(string|null)[]} Room ID for each request, or null if no room available\n */\nfunction findRooms(rooms, bookings, requests) {\n  // TODO: implement\n}\n\nmodule.exports = { findRooms };\n",
         "python": "\"\"\"\nFind the best available meeting room for each request.\n\nGiven rooms with capacities, existing bookings, and meeting requests,\nassign each request the smallest-capacity room that fits and is not\nbooked during the requested time window, or None if unavailable.\n\"\"\"\n\n\ndef find_rooms(rooms: list[dict], bookings: list[dict], requests: list[dict]) -> list:\n    pass\n"
-      }
+      },
+      "runInputs": [
+        {
+          "label": "booking conflict",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "S", "capacity": 4}, {"id": "M", "capacity": 8}, {"id": "L", "capacity": 15}],
+            [{"roomId": "M", "start": 9, "end": 11}],
+            [{"start": 9, "end": 10, "minCapacity": 6}, {"start": 12, "end": 13, "minCapacity": 3}]
+          ],
+          "expected": ["L", "S"]
+        },
+        {
+          "label": "smallest available",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "R1", "capacity": 6}, {"id": "R2", "capacity": 10}, {"id": "R3", "capacity": 6}],
+            [{"roomId": "R1", "start": 8, "end": 12}],
+            [{"start": 10, "end": 11, "minCapacity": 5}]
+          ],
+          "expected": ["R3"]
+        }
+      ]
     }
   ]
 }

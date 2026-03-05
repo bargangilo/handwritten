@@ -24,7 +24,23 @@
       "scaffold": {
         "js": "/**\n * Two Sum\n *\n * Given an array of integers `nums` and an integer `target`,\n * return the indices of the two numbers that add up to `target`.\n *\n * You may assume each input has exactly one solution,\n * and you may not use the same element twice.\n *\n * @param {number[]} nums\n * @param {number} target\n * @returns {number[]}\n */\nfunction twoSum(nums, target) {\n  // TODO: implement\n}\n\nmodule.exports = { twoSum };\n",
         "python": "\"\"\"\nTwo Sum\n\nGiven a list of integers `nums` and an integer `target`,\nreturn the indices of the two numbers that add up to `target`.\n\nYou may assume each input has exactly one solution,\nand you may not use the same element twice.\n\"\"\"\n\n\ndef two_sum(nums: list[int], target: int) -> list[int]:\n    pass\n"
-      }
+      },
+      "runInputs": [
+        {
+          "label": "small array",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[1, 5, 3, 7], 8],
+          "expected": [0, 3]
+        },
+        {
+          "label": "different target",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[4, 3, 8, 1, 6], 9],
+          "expected": [1, 4]
+        }
+      ]
     },
     {
       "title": "Two Sum — Optimized",
@@ -39,7 +55,23 @@
       "scaffold": {
         "js": "",
         "python": ""
-      }
+      },
+      "runInputs": [
+        {
+          "label": "negative and positive mix",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[-3, 1, 4, -1], 0],
+          "expected": [1, 3]
+        },
+        {
+          "label": "larger values",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[10, 20, 30, 40, 50], 90],
+          "expected": [3, 4]
+        }
+      ]
     },
     {
       "title": "Three Sum",
@@ -58,7 +90,23 @@
       "scaffold": {
         "js": "\n/**\n * Three Sum\n *\n * Given an array of integers `nums` and an integer `target`,\n * return all unique triplets [nums[i], nums[j], nums[k]] such that\n * nums[i] + nums[j] + nums[k] === target.\n *\n * No duplicate triplets allowed. Order within triplets doesn't matter.\n *\n * @param {number[]} nums\n * @param {number} target\n * @returns {number[][]}\n */\nfunction threeSum(nums, target) {\n  // TODO: implement\n}\n\nmodule.exports.threeSum = threeSum;\n",
         "python": "\n\ndef three_sum(nums: list[int], target: int) -> list[list[int]]:\n    \"\"\"Return all unique triplets that sum to target.\"\"\"\n    pass\n"
-      }
+      },
+      "runInputs": [
+        {
+          "label": "single triplet",
+          "language": "javascript",
+          "function": "threeSum",
+          "args": [[1, 2, 8, 4, 5], 7],
+          "expected": [[1, 2, 4]]
+        },
+        {
+          "label": "larger target",
+          "language": "javascript",
+          "function": "threeSum",
+          "args": [[3, 7, 2, 5, 1], 15],
+          "expected": [[3, 5, 7]]
+        }
+      ]
     }
   ]
 }

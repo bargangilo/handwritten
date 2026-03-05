@@ -187,7 +187,7 @@ The CLI and skills interact exclusively through the filesystem: skills write `pr
 
 `parts.maxPartsGlobal` in `config.json` is a hard ceiling enforced by agent skills — the CLI itself does not enforce this limit, it is a generation-time constraint only.
 
-When adding new fields to `problem.json`, update `docs/problem-schema.md`, `.agents/templates/problem-schema-template.json`, and the worked examples in both files atomically.
+When adding new fields to `problem.json`, update `docs/problem-schema.md`, `.agents/templates/problem-schema-template.json`, `.agents/context/problem-authoring-guide.md`, and the worked examples in both docs files atomically. When adding `runInputs` to a problem, verify every `function` name matches the scaffold exactly and every `expected` value is correct — both are silent failure modes if wrong.
 
 The three documents in `.agents/context/` are the knowledge foundation for all agent skills. When the `problem.json` schema changes, update `problem-authoring-guide.md` atomically. When difficulty calibration anchors need updating, update `difficulty-guide.md`.
 

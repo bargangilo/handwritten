@@ -27,7 +27,23 @@
       "scaffold": {
         "js": "/**\n * Find the best affordable seat for each customer budget.\n *\n * @param {number[]} prices - Available seat prices (unsorted)\n * @param {number[]} budgets - Customer budgets to check\n * @returns {number[]} For each budget, the highest price <= budget, or -1 if none\n */\nfunction findBestSeats(prices, budgets) {\n  // TODO: implement\n}\n\nmodule.exports = { findBestSeats };\n",
         "python": "\"\"\"\nFind the best affordable seat for each customer budget.\n\nGiven an unsorted list of available seat prices and a list of customer budgets,\nreturn the price of the most expensive seat each customer can afford (price <= budget),\nor -1 if no seat is within budget.\n\"\"\"\n\n\ndef find_best_seats(prices: list[int], budgets: list[int]) -> list[int]:\n    pass\n"
-      }
+      },
+      "runInputs": [
+        {
+          "label": "mixed budgets",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[25, 50, 75, 100], [60, 30, 90]],
+          "expected": [50, 25, 75]
+        },
+        {
+          "label": "one out of budget",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[15, 40, 65], [50, 10]],
+          "expected": [40, -1]
+        }
+      ]
     }
   ]
 }

@@ -42,6 +42,25 @@
           "_comment": "Starter code injected into the workspace file. Part 1 scaffold is written as the full file. Part 2+ scaffolds are appended after a delimiter comment: '// ---- Part N ----' (JS) or '# ---- Part N ----' (Python).",
           "js": "<string: JavaScript source code>",
           "python": "<string: Python source code>"
+        },
+        "runInputs": {
+          "_comment": "Optional. 2-3 representative function calls executed on every save and shown as Examples before solving. Per-part — accumulates as parts unlock. Language-specific entries. Args and expected must be JSON-serializable. Expected is optional but strongly recommended — omitting it shows return values with no pass/fail indicator. Labels appear in console panel and problem description. Do not duplicate test inputs exactly.",
+          "value": [
+            {
+              "label": "<string: short scenario name, e.g. 'basic case'>",
+              "language": "<'javascript' | 'python'>",
+              "function": "<string: exact exported function name matching scaffold>",
+              "args": ["<arg1>", "<arg2>"],
+              "expected": "<any JSON-serializable value — omit field entirely if unknown>"
+            },
+            {
+              "label": "<string: different scenario>",
+              "language": "<'javascript' | 'python'>",
+              "function": "<string: exact exported function name matching scaffold>",
+              "args": ["<arg1>", "<arg2>"],
+              "expected": "<any JSON-serializable value>"
+            }
+          ]
         }
       },
       {
@@ -55,6 +74,18 @@
           "_comment": "Use additive exports in JS (module.exports.newFn = newFn) to avoid overwriting Part 1 exports. Empty string is valid if no new scaffold is needed.",
           "js": "<string: JavaScript source code>",
           "python": "<string: Python source code>"
+        },
+        "runInputs": {
+          "_comment": "Part 2+ run inputs supplement Part 1 inputs. All unlocked parts' run inputs execute on every save. Choose inputs that exercise the new function introduced in this part.",
+          "value": [
+            {
+              "label": "<string: scenario for part 2 function>",
+              "language": "<'javascript' | 'python'>",
+              "function": "<string: exact exported function name from this part's scaffold>",
+              "args": ["<arg1>"],
+              "expected": "<any JSON-serializable value>"
+            }
+          ]
         }
       }
     ]

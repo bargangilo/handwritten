@@ -214,7 +214,48 @@ During a session, the CLI owns `main.js`/`main.py`. The agent writes `problem.js
 
 ---
 
-## Section 5: Test Authoring Rules
+## Section 5: Run Input Authoring
+
+### What Run Inputs Are
+
+Run inputs are illustrative function calls with expected outputs, defined per-part in `runInputs`. They are executed on every file save during a session and shown as Examples in the problem description before solving. They are the problem's examples with correctness checking, not its tests.
+
+### The `expected` Field
+
+The `expected` field is strongly recommended on every entry. An entry without `expected` is display-only — the user sees the return value but gets no correctness signal. An entry with `expected` gives immediate pass/fail feedback via deep equality. The `expected` value must be accurate — verify it by mentally tracing through a correct solution before writing it. An incorrect `expected` is worse than no `expected` because it shows a false failure on every save.
+
+### Count
+
+Include 2-3 run inputs per part. Fewer is acceptable for simple single-case problems. Never more than 4.
+
+### Choosing Good Inputs
+
+- Representative of the common case, not edge cases
+- Different from each other — show the function behaving on meaningfully different data
+- Small enough to read in the console panel — arrays of 4-6 elements maximum
+- Do not duplicate test inputs exactly — run inputs are visible, test inputs are not
+
+### Function Name Matching
+
+The `function` field must exactly match the exported function name in the scaffold. This is the most common authoring mistake. The function name in `runInputs` is used directly in the generated harness. A mismatch produces `TypeError: mod.functionName is not a function` on every save.
+
+For JS Part 1 scaffolds with `module.exports = { findBestSeats }`, the function name is `findBestSeats`. For Part 2+ scaffolds with `module.exports.sumNested = sumNested`, the function name is `sumNested`.
+
+### JSON-Serializable Constraint
+
+Both `args` and `expected` must be JSON-serializable. Allowed: arrays, plain objects, strings, numbers, booleans, `null`. Not allowed: functions, `undefined`, `NaN`, `Infinity`, circular references, class instances. If any argument would require a non-serializable type, the problem cannot have run inputs for that function call.
+
+### Per-Part Accumulation
+
+Run inputs from Part 1 continue running when Part 2 unlocks. The harness accumulates all run inputs from unlocked parts in order. Part 1 inputs should remain meaningful in the context of Part 2 — if Part 2 changes the function signature or return contract, replace or remove the Part 1 run inputs that would break.
+
+### Language-Specific Entries
+
+Each entry specifies a `language` field. For both-language problems, provide matching JS and Python entries per scenario with the correct function names (`findBestSeats` for JS, `find_best_seats` for Python). For JS-only problems, only JS entries are needed.
+
+---
+
+## Section 6: Test Authoring Rules
 
 ### Single Suite File Convention
 
@@ -289,7 +330,7 @@ Every test in the suite file must be referenced by at least one part's `activeTe
 
 ---
 
-## Section 6: Self-Check Checklist
+## Section 7: Self-Check Checklist
 
 Run through this checklist before writing any files. Every answer must match the expected value.
 
@@ -308,10 +349,15 @@ Run through this checklist before writing any files. Every answer must match the
 13. Do all pytest test functions use function-local imports (not module-level)? **Must be Yes.**
 14. Is `overall` computed from the formula, not estimated manually? **Must be Yes.**
 15. Does the problem directory name use lowercase-with-hyphens and match what the test files import from `workspace/<name>/main`? **Must be Yes.**
+16. Do all `runInputs` entries use the exact function name from the scaffold? **Must be Yes.**
+17. Are all `args` and `expected` values JSON-serializable? **Must be Yes.**
+18. Are `expected` values accurate — verified by tracing through a correct solution? **Must be Yes.**
+19. Are run inputs illustrative without duplicating test inputs exactly? **Must be Yes.**
+20. Is the run inputs count 2-3 per part? **Must be Yes.**
 
 ---
 
-## Section 7: Worked Example
+## Section 8: Worked Example
 
 A two-part problem in real-world style. Part 1 asks the user to implement a rate limiter that tracks request counts per time window. Part 2 extends it to support multiple clients with independent limits.
 
@@ -383,6 +429,7 @@ Annotations:
 - **Part 2 `activeTests`** — includes all five Part 1 tests (accumulation rule, Section 3).
 - **Part 2 JS scaffold** — uses `module.exports.createMultiLimiter` (additive export).
 - **Difficulty** — `overall` = round((2 × 0.3) + (2 × 0.3) + (3 × 0.4)) = round(2.4) = 2. Computed, not estimated (Checklist item 14).
+- **Run inputs** — omitted because both `createLimiter` and `createMultiLimiter` return functions, which are not JSON-serializable. `runInputs` is optional and should be omitted when the return value cannot be expressed as `expected`.
 
 ### `problems/request-throttle/suite.test.js`
 

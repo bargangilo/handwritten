@@ -26,7 +26,23 @@
       "scaffold": {
         "js": "/**\n * Flatten a deeply nested array into a single-level array.\n *\n * @param {Array} arr - A possibly nested array\n * @returns {number[]} A flat array of all values\n */\nfunction flattenArray(arr) {\n  // TODO: implement\n}\n\nmodule.exports = { flattenArray };\n",
         "python": "\"\"\"\nFlatten a deeply nested list into a single-level list.\n\"\"\"\n\n\ndef flatten_array(arr: list) -> list:\n    pass\n"
-      }
+      },
+      "runInputs": [
+        {
+          "label": "mixed nesting",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[1, [2, 3], [4, [5]]]],
+          "expected": [1, 2, 3, 4, 5]
+        },
+        {
+          "label": "nested pairs",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[1, [2]], 3, [[4]]]],
+          "expected": [1, 2, 3, 4]
+        }
+      ]
     },
     {
       "title": "Sum nested elements without flattening",
@@ -46,7 +62,23 @@
       "scaffold": {
         "js": "\n/**\n * Sum all numbers in a deeply nested array without flattening.\n *\n * @param {Array} arr - A possibly nested array of numbers\n * @returns {number} The sum of all numbers\n */\nfunction sumNested(arr) {\n  // TODO: implement\n}\n\nmodule.exports.sumNested = sumNested;\n",
         "python": "\n\ndef sum_nested(arr: list) -> int:\n    \"\"\"Sum all numbers in a deeply nested list without flattening.\"\"\"\n    pass\n"
-      }
+      },
+      "runInputs": [
+        {
+          "label": "four levels deep",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[1, [2, [3, [4]]]]],
+          "expected": 10
+        },
+        {
+          "label": "grouped tens",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[[10], [20, [30]]]],
+          "expected": 60
+        }
+      ]
     }
   ]
 }

@@ -139,7 +139,7 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 7. **Run the self-check checklist.**
 
-   This step is mandatory and cannot be abbreviated, skipped, or summarized. Go through every item in `problem-authoring-guide.md` Section 6 and verify the answer:
+   This step is mandatory and cannot be abbreviated, skipped, or summarized. Go through every item in `problem-authoring-guide.md` Section 7 and verify the answer:
 
    1. Does the title contain any algorithm or data structure names? **Must be No.**
    2. Does the title or description reveal the number of parts? **Must be No.**
@@ -156,6 +156,11 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
    13. Do all pytest test functions use function-local imports (not module-level)? **Must be Yes.**
    14. Is `overall` computed from the formula, not estimated manually? **Must be Yes.**
    15. Does the problem directory name use lowercase-with-hyphens and match what the test files import from `workspace/<name>/main`? **Must be Yes.**
+   16. Do all `runInputs` entries use the exact function name from the scaffold? **Must be Yes.**
+   17. Are all `args` and `expected` values JSON-serializable? **Must be Yes.**
+   18. Are `expected` values accurate — verified by tracing through a correct solution? **Must be Yes.**
+   19. Are run inputs illustrative without duplicating test inputs exactly? **Must be Yes.**
+   20. Is the run inputs count 2-3 per part? **Must be Yes.**
 
    If any item fails, revise the relevant file(s) and re-check the failing item(s). Do not write files until every item passes.
 
