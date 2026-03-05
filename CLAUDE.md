@@ -166,6 +166,8 @@ The three documents in `.agents/context/` are the knowledge foundation for all a
 
 The randomization scripts in `.agents/scripts/` have unit tests in `tests/scripts/` — run `yarn test` to verify them. If `config.json` schema changes, update both scripts and their tests.
 
+The four skill files are in `.agents/skills/` — they are instruction documents for AI agents, not code. When writing or updating skill files: every step must be explicit and complete, agents should never need to infer the next action. Skill files reference context documents by exact path — if context documents are moved or renamed, all skill files that reference them must be updated atomically. The self-check checklist in `.agents/context/problem-authoring-guide.md` is the quality gate for problem generation — it must be kept current as authoring rules evolve. When adding new skills: follow the existing skill file format, add the skill to `docs/agent-skills.md` with invocation instructions for all supported agents, and update the README Agent Skills section.
+
 ## Things to Never Do
 
 - Use a package manager other than Yarn (`npm install`, `npx`, `pnpm`)

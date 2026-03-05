@@ -23,6 +23,7 @@ On first run, pick a problem, choose a language, and start editing the workspace
 | **Python 3** | `python3 --version` | Required only for Python problems |
 | **pytest** | `pytest --version` | `pip install pytest`. Required only for Python problems |
 | **VS Code** + `code` CLI | `which code` | The CLI launches VS Code automatically. Install the shell command: Cmd+Shift+P → "Shell Command: Install 'code' command in PATH" |
+| **AI coding agent** | — | For agent skills only. Any agent with file access to the repo (Claude Code, Cursor, GitHub Copilot, Aider, or similar). The CLI itself has no AI dependency |
 
 ## How It Works
 
@@ -120,6 +121,7 @@ tests/
     stats.test.js                  # Stats computation and session I/O tests
     fixtures/                      # Test fixture files
 docs/
+  agent-skills.md                  # Agent skills reference — invocation, setup, troubleshooting
   problem-schema.md                # problem.json authoring reference
   stats-and-timer.md               # Timer, session persistence, and stats reference
 ```
@@ -145,9 +147,11 @@ See [docs/problem-schema.md](docs/problem-schema.md) for the full schema referen
 
 ## Agent Skills
 
-The repo includes agent skills for problem generation, hints, and solution review. These skills are invokable from any AI coding agent with file access — they read `config.json` and problem definitions from the filesystem and write new `problem.json` files and test suites directly into `problems/`. The CLI has zero dependency on the agent skills system; it does not require an API key and never invokes an agent at runtime.
+The repo includes an agent skills system for AI-powered problem generation, progressive hints, and solution review. Skills are instruction documents that any AI coding agent can execute — they read configuration and problem data from the filesystem, generate new problems and test suites, and provide feedback on solutions. The CLI has zero dependency on the agent skills system; it does not require an API key and never invokes an agent at runtime.
 
-Full documentation for each skill, its inputs, and its behavior is in `docs/agent-skills.md` (available after skill implementation is complete).
+Four skills are available: `/setup-config` creates your personal `config.json`, `/generate-problem` produces complete problem definitions with test suites, `/hint` provides tiered hints during a session, and `/review-solution` delivers structured feedback on completed solutions.
+
+See [docs/agent-skills.md](docs/agent-skills.md) for the full reference — prerequisites, agent-specific invocation instructions (Claude Code, Cursor, GitHub Copilot, Aider), Surprise Me mode, and troubleshooting.
 
 ## Troubleshooting
 
