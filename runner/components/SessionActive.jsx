@@ -364,7 +364,7 @@ export default function SessionActive({
                 <Text key={msg.id}>
                   <Text color="gray">{"  "}{"─".repeat(45)}</Text>
                   {"\n"}
-                  <Text bold>{"  "}Part {msg.text.split(":")[0].includes("Part") ? msg.text : msg.text}</Text>
+                  <Text bold>{"  "}{msg.text}</Text>
                   {msg.description ? "\n" + "  " + msg.description : ""}
                   {"\n"}
                   <Text color="gray">{"  "}{"─".repeat(45)}</Text>
