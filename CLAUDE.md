@@ -4,7 +4,7 @@ Standing instructions for Claude Code when working on this repository. Follow th
 
 ## Project Overview
 
-Interview Study is a hot-reload CLI tool for practicing coding interview problems. A solo developer selects a problem, picks JavaScript or Python, and edits a solution file while tests re-run automatically on save. Problems reveal parts progressively — the user only sees the next part after passing the current one. Sessions are timed and persisted, with stats tracking across attempts.
+Handwritten is a hot-reload CLI tool for practicing coding interview problems. A solo developer selects a problem, picks JavaScript or Python, and edits a solution file while tests re-run automatically on save. Problems reveal parts progressively — the user only sees the next part after passing the current one. Sessions are timed and persisted, with stats tracking across attempts.
 
 The tool is feature-complete. The primary ongoing work is adding new problems and maintaining the runner.
 

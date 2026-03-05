@@ -57,7 +57,7 @@ function launchVSCode(rootDir, problem, language) {
     JSON.stringify(VSCODE_USER_SETTINGS, null, 2)
   );
   const solutionFile = workspacePath(problem, language, rootDir);
-  const vsWorkspace = path.join(rootDir, "interview-study.code-workspace");
+  const vsWorkspace = path.join(rootDir, "handwritten.code-workspace");
   const child = spawnProc(
     "code",
     ["--user-data-dir", VSCODE_DATA_DIR, vsWorkspace, "-g", solutionFile],

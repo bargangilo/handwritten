@@ -3003,6 +3003,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"handwritten@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "handwritten@workspace:."
+  dependencies:
+    "@babel/core": "npm:^7.0.0"
+    "@babel/preset-env": "npm:^7.0.0"
+    "@babel/preset-react": "npm:^7.0.0"
+    "@inkjs/ui": "npm:^2.0.0"
+    babel-jest: "npm:^29.7.0"
+    chalk: "npm:^4.1.2"
+    chokidar: "npm:^4.0.0"
+    ink: "npm:^6.0.0"
+    ink-testing-library: "npm:^4.0.0"
+    jest: "npm:^29.7.0"
+    react: "npm:^19.0.0"
+    tsx: "npm:^4.0.0"
+  languageName: unknown
+  linkType: soft
+
 "has-flag@npm:^4.0.0":
   version: 4.0.0
   resolution: "has-flag@npm:4.0.0"
@@ -3165,25 +3184,6 @@ __metadata:
   checksum: 10c0/50500e547fdf6a1f1d836d6befbd4770e3ab649ef0be1884500a6da411fb68a90e22dd7dcc9c404911d30e9f87506b3b9d8e997c6c6ceac85ee054b4dadefaff
   languageName: node
   linkType: hard
-
-"interview-study@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "interview-study@workspace:."
-  dependencies:
-    "@babel/core": "npm:^7.0.0"
-    "@babel/preset-env": "npm:^7.0.0"
-    "@babel/preset-react": "npm:^7.0.0"
-    "@inkjs/ui": "npm:^2.0.0"
-    babel-jest: "npm:^29.7.0"
-    chalk: "npm:^4.1.2"
-    chokidar: "npm:^4.0.0"
-    ink: "npm:^6.0.0"
-    ink-testing-library: "npm:^4.0.0"
-    jest: "npm:^29.7.0"
-    react: "npm:^19.0.0"
-    tsx: "npm:^4.0.0"
-  languageName: unknown
-  linkType: soft
 
 "ip-address@npm:^10.0.1":
   version: 10.1.0

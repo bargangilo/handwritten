@@ -15,7 +15,7 @@ export default function MainMenu({ dispatch }) {
 
   return (
     <>
-      <Text bold>{"\n  "}Interview Study</Text>
+      <Text bold>{"\n  "}Handwritten</Text>
       <Text color="gray">{"  "}{"─".repeat(15)}</Text>
       <Select
         options={options}

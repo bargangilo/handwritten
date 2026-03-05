@@ -1,9 +1,9 @@
 {
-  "name": "interview-study",
+  "name": "handwritten",
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "Interview coding study environment with hot-reload test watching",
+  "description": "Hot-reload practice environment for handwritten coding interview problems",
   "scripts": {
     "start": "tsx runner/index.js",
     "test": "jest"

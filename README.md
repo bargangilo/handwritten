@@ -1,10 +1,9 @@
 ```
- ___       _                 _                 ____  _             _
-|_ _|_ __ | |_ ___ _ ____  _(_) _____      __ / ___|| |_ _   _  __| |_   _
- | || '_ \| __/ _ \ '__\ \/ / |/ _ \ \ /\ / / \___ \| __| | | |/ _` | | | |
- | || | | | ||  __/ |   \  /| |  __/\ V  V /   ___) | |_| |_| | (_| | |_| |
-|___|_| |_|\__\___|_|   /_/ |_|\___| \_/\_/   |____/ \__|\__,_|\__,_|\__, |
-                                                                      |___/
+ _   _                 _               _ _   _
+| | | | __ _ _ __   __| |_      ___ __(_) |_| |_ ___ _ __
+| |_| |/ _` | '_ \ / _` \ \ /\ / / '__| | __| __/ _ \ '_ \
+|  _  | (_| | | | | (_| |\ V  V /| |  | | |_| ||  __/ | | |
+|_| |_|\__,_|_| |_|\__,_| \_/\_/ |_|  |_|\__|\__\___|_| |_|
 ```
 
 **A hot-reload practice environment for coding interview problems.**
@@ -21,7 +20,7 @@ The repo also includes an agent skills system — point any AI coding agent at t
 
 ```bash
 corepack enable                  # activates Yarn 4 (one-time setup)
-git clone <repo-url> && cd interview-study
+git clone <repo-url> && cd handwritten
 yarn install                     # installs dependencies via Plug'n'Play (no node_modules/)
 yarn start                       # launches the CLI
 ```

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The agent skills system extends the interview study tool with AI-powered problem generation, hints, and solution review. Skills are instruction documents that any AI coding agent can execute — they read configuration and problem data from the filesystem, generate new problems and test suites, and provide feedback on solutions. The skills system is completely separate from the CLI: the CLI reads problem files that skills write, but it never calls an API, requires a key, or invokes an agent at runtime.
+The agent skills system extends Handwritten with AI-powered problem generation, hints, and solution review. Skills are instruction documents that any AI coding agent can execute — they read configuration and problem data from the filesystem, generate new problems and test suites, and provide feedback on solutions. The skills system is completely separate from the CLI: the CLI reads problem files that skills write, but it never calls an API, requires a key, or invokes an agent at runtime.
 
 To use skills, you need an AI coding agent with read/write access to this repository's files. Any agent that can read markdown, write JSON, and execute shell commands will work — Claude Code, Cursor, GitHub Copilot Chat, Aider, or similar tools. The skills are agent-agnostic by design: each skill file contains complete, step-by-step instructions that any capable agent can follow.
 
@@ -80,7 +80,7 @@ For any agent not listed above:
 1. **Clone the repo and install dependencies:**
    ```bash
    corepack enable
-   git clone <repo-url> && cd interview-study
+   git clone <repo-url> && cd handwritten
    yarn install
    ```
 
