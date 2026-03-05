@@ -41,8 +41,6 @@ yarn start                       # launches the CLI
 
 On first run, pick a problem, choose a language, and start editing the workspace file. Tests run on save.
 
-![Main menu](media/output/main-menu.png)
-
 ## Prerequisites
 
 | Requirement | Verify | Notes |
