@@ -108,6 +108,8 @@ For any agent not listed above:
 
 Creates or updates `config.json` through a guided conversation. Walks through each setting — topics, difficulty ranges, style preference, language, part counts, Surprise Me mode, and timing — and explains what each controls before asking for your preference. Writes the file only after you explicitly confirm the full configuration.
 
+The skill is driven by `.agents/config-schema.json`, which is the single source of truth for all config option definitions — field labels, descriptions, types, options, defaults, and validation rules. Adding a new config option requires updating `config-schema.json` first; the skill reads field definitions from this file rather than hardcoding them.
+
 Use this when you first clone the repo, when you want to change your practice focus, or when you want to adjust difficulty or topic preferences.
 
 ### `/generate-problem`

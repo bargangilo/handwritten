@@ -11,57 +11,35 @@ Creates or updates the user's `config.json` file through a guided conversation. 
 
 ## Before You Begin
 
-1. Read `.agents/templates/config-template.json` — this is the structural base for the output file.
-2. Read `.agents/context/difficulty-guide.md` Section 1 (Dimension Definitions) — you will reference these definitions when explaining difficulty settings to the user.
+1. Read `.agents/config-schema.json` — this is the single source of truth for all config field definitions. All field labels, descriptions, options, defaults, and recommendations are sourced from this file. Do not hardcode them in the skill.
+2. Read `.agents/templates/config-template.json` — this is the structural base for the output file.
+3. Read `.agents/context/difficulty-guide.md` Section 1 (Dimension Definitions) — you will reference these definitions when explaining difficulty settings to the user.
 
 ## Steps
 
 1. **Check for existing config.** Look for `config.json` at the repo root.
-   - If it exists: read it, display a human-readable summary of all current settings in plain English (not raw JSON), and ask: "Would you like to update specific settings or start from scratch?" Wait for the user's response before proceeding. If they want to update specific settings, skip directly to the relevant section(s) in step 2.
+   - If it exists: read it, display a human-readable summary of all current settings in plain English (not raw JSON), then present a two-option interactive choice — do not ask this as a free-text question:
+     - "Update specific settings"
+     - "Start from scratch"
+     If the user selects "Update specific settings", present the available section labels from `config-schema.json` as an interactive choice and ask which section they want to update. Jump directly to that section in step 2.
    - If it does not exist: greet the user and explain: "This skill will create your config.json, which controls how problems are generated for you — topics, difficulty, style, timing, and more. I'll walk you through each setting." Proceed to step 2.
 
-2. **Walk through each configuration section in order.** For each section, explain what it controls and how it affects problem generation before asking for the user's preference. Parse their natural language response into the correct config value — do not ask them to type JSON.
+2. **Walk through each configuration section in order.** Process each section from `config-schema.json` sequentially. For each section, display its `label` and `description` to introduce it. Then present each field using the rules below. Parse all user input as natural language — never ask them to type JSON.
 
-   a. **Topics**
-   Explain: "Topics control which CS and programming concepts appear in generated problems."
-   Ask what topics they want to practice. Accept a comma-separated list, a sentence, or any natural format. Then ask if there are topics they want to explicitly avoid.
-   Validate that every provided topic is a real, meaningful CS or programming concept. If something seems unclear, misspelled, or too vague (e.g. "hard stuff"), confirm with the user before accepting it: "Did you mean [X]? Or could you be more specific?"
+   **Field presentation rules by type:**
 
-   b. **Difficulty**
-   Explain: "Difficulty has three independent dimensions, each rated 1-5. You set a range for each."
-   For each dimension, explain it using the concrete level definitions from `difficulty-guide.md` Section 1:
-   - **Algorithm complexity** — "Level 1 is simple iteration. Level 2 is binary search or hash map lookup. Level 3 is BFS/DFS or basic DP. Level 4 is Dijkstra's or 2D DP. Level 5 is advanced algorithms like network flow."
-   - **Data structure complexity** — "Level 1 is arrays and strings only. Level 2 adds hash maps, stacks, queues. Level 3 adds trees, heaps, graphs. Level 4 requires custom or augmented structures. Level 5 is tries, segment trees, or similar."
-   - **Problem complexity** — "Level 1 is obvious what to do. Level 2 needs one insight. Level 3 needs pattern recognition. Level 4 needs chaining multiple insights. Level 5 requires reframing the problem entirely."
-   Ask what range they want for each dimension (e.g. "1-3" or "2-4"). If the user expresses a goal instead of numbers ("I want medium difficulty"), translate it into appropriate ranges, state them, and confirm.
+   - **`single-select`**: Present as a clickable interactive choice using the field's `options` array. Show each option's `label` and `description`. Mark the `recommended` option clearly if one exists.
+   - **`multi-select`**: Present as a multi-select choice using the field's `options` array.
+   - **`boolean`**: Present as a two-option clickable choice: Yes / No. Mark the `recommended` option if one exists.
+   - **`range`**: Ask as a free-text question (ranges are naturally expressed as "1-3" or "2-4"). Show the `min` and `max` bounds from the schema. If the user expresses a goal instead of numbers (e.g. "medium difficulty"), translate it into appropriate values, state them, and confirm.
+   - **`minute-range`**: Same as `range` — ask as free-text showing the bounds.
+   - **`integer`**: Ask as free-text showing the valid range. Show the `recommended` value if one exists.
+   - **`topic-list`**: Ask as free-text, accepting a comma-separated list, a sentence, or any natural format. Validate that every provided topic is a real, meaningful CS or programming concept. If something seems unclear, misspelled, or too vague (e.g. "hard stuff"), confirm with the user: "Did you mean [X]? Or could you be more specific?"
+   - **`topic-avoid-list`**: Ask as free-text. After collecting the avoid list, remove any topic from the `include` list that also appears in the `avoid` list. This deduplication happens silently — do not mention it to the user unless the entire include list would become empty, in which case ask them to reconsider their avoid list. The final `config.json` must never contain the same topic in both `topics.include` and `topics.avoid`.
 
-   c. **Style**
-   Explain: "LeetCode style presents problems as abstract function-signature tasks with numerical constraints. Real-world style frames problems in a meaningful domain context — scheduling systems, inventory management, etc."
-   Ask their preference: LeetCode only, real-world only, or mixed. If mixed, confirm they are comfortable with either style appearing.
+   **Dependency handling:** Skip any field where `dependsOn` references a field whose current value does not satisfy the dependency (e.g. skip the `hide*` sub-flags if `hideProblemDetails.enabled` was set to false).
 
-   d. **Language**
-   Ask: "Should generated problems include test suites for JavaScript, Python, or both?"
-
-   e. **Parts**
-   Explain: "Problems can have multiple parts that build on each other. You set a range for how many parts generated problems should have, plus a hard ceiling (maxPartsGlobal) that is never exceeded."
-   Ask for their preferred range (e.g. "1-3"). Then ask them to confirm a maxPartsGlobal value. Recommend 3 for most interview prep. If they want more, accept up to 6 but not higher.
-
-   f. **Surprise Me Mode**
-   Explain: "Surprise Me controls whether generation parameters are selected randomly. When enabled, the system picks topics, style, difficulty, and part count automatically based on your configured preferences rather than asking you each time."
-   Ask if they want this enabled.
-   Note: Surprise Me and problem detail hiding are separate settings — Surprise Me is about how parameters are chosen, not about what gets shown during generation.
-
-   g. **Hide Problem Details**
-   Explain: "Hiding problem details controls what gets revealed during generation — preventing the agent from showing the problem concept, structure, or test suite content in the terminal before you start solving. This is useful whether or not Surprise Me is enabled."
-   Ask if they want detail hiding enabled. If yes, confirm each sub-flag:
-   - "Hide topics — should the agent avoid revealing what topics the problem covers?" (`hideTopics`)
-   - "Hide style — should the agent avoid revealing whether it's LeetCode or real-world style?" (`hideStyle`)
-   - "Hide part count — should the agent avoid revealing how many parts the problem has?" (`hidePartCount`)
-   - "Hide write output — should problem files be written silently via a script so their contents are not displayed in the terminal during generation? (Recommended: yes)" (`hideWriteOutput`)
-   Explain `hideWriteOutput` specifically: "When enabled, problem files are written through a background script rather than being shown in the terminal. This prevents you from accidentally seeing test cases or problem structure before you start solving. We recommend enabling this for the best experience."
-
-   h. **Time Range**
-   Ask: "What range of expected problem-solving times do you want to practice with? For example, 20-45 minutes." Accept a range in minutes.
+   **Difficulty section special handling:** When presenting difficulty range fields, display the full level breakdown from `difficulty-guide.md` Section 1 before asking for the range. This is the one place where the skill supplements the schema with external context. Present all five levels for each dimension so the user can make an informed choice.
 
 3. **Display full summary.** After all sections are collected, display a complete human-readable summary of the full configuration in plain English. Example format:
    ```
@@ -93,6 +71,7 @@ Creates or updates the user's `config.json` file through a guided conversation. 
 4. Topics must be real CS/programming concepts. Do not accept arbitrary strings without confirming with the user.
 5. Always set `createdAt` (on new file creation only) and `updatedAt` as ISO 8601 timestamps.
 6. Parse all user input as natural language. Never ask the user to type JSON, arrays, or config syntax.
+7. The `topics.include` array must never contain a topic that also appears in `topics.avoid`. Apply deduplication after collecting the avoid list and before writing the file.
 
 ## Output
 

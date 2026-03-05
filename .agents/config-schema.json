@@ -1,0 +1,248 @@
+[
+  {
+    "key": "topics",
+    "label": "Topics",
+    "description": "Controls which CS and programming concepts appear in generated problems.",
+    "fields": [
+      {
+        "key": "topics.include",
+        "label": "Practice topics",
+        "description": "The CS and programming concepts you want to practice. Generated problems will draw from this list.",
+        "type": "topic-list",
+        "default": ["arrays", "hash maps", "trees", "dynamic programming", "strings"]
+      },
+      {
+        "key": "topics.avoid",
+        "label": "Topics to avoid",
+        "description": "Concepts you want excluded from generated problems. Any topic here is also removed from the include list automatically.",
+        "type": "topic-avoid-list",
+        "default": []
+      }
+    ]
+  },
+  {
+    "key": "difficulty",
+    "label": "Difficulty",
+    "description": "Sets the difficulty range for generated problems across three independent dimensions, each rated 1-5.",
+    "fields": [
+      {
+        "key": "difficulty.algorithmComplexity",
+        "label": "Algorithm complexity range",
+        "description": "Complexity of the algorithm required. Level 1 is simple iteration. Level 2 is binary search or hash map lookup. Level 3 is BFS/DFS or basic DP. Level 4 is Dijkstra's or 2D DP. Level 5 is advanced algorithms like network flow.",
+        "type": "range",
+        "min": 1,
+        "max": 5,
+        "default": [1, 3]
+      },
+      {
+        "key": "difficulty.dataStructureComplexity",
+        "label": "Data structure complexity range",
+        "description": "Complexity of data structures involved. Level 1 is arrays and strings only. Level 2 adds hash maps, stacks, queues. Level 3 adds trees, heaps, graphs. Level 4 requires custom or augmented structures. Level 5 is tries, segment trees, or similar.",
+        "type": "range",
+        "min": 1,
+        "max": 5,
+        "default": [1, 3]
+      },
+      {
+        "key": "difficulty.problemComplexity",
+        "label": "Problem complexity range",
+        "description": "Difficulty of understanding and decomposing the problem. Level 1 is obvious what to do. Level 2 needs one insight. Level 3 needs pattern recognition. Level 4 needs chaining multiple insights. Level 5 requires reframing the problem entirely.",
+        "type": "range",
+        "min": 1,
+        "max": 5,
+        "default": [2, 4]
+      }
+    ]
+  },
+  {
+    "key": "style",
+    "label": "Style",
+    "description": "Controls the framing style of generated problems.",
+    "fields": [
+      {
+        "key": "style.preference",
+        "label": "Style preference",
+        "description": "How problems are framed. LeetCode style uses abstract function signatures with numerical constraints. Real-world style frames problems in a meaningful domain context like scheduling or inventory management.",
+        "type": "single-select",
+        "options": [
+          {
+            "value": "leetcode",
+            "label": "LeetCode only",
+            "description": "Abstract algorithmic problems with function signatures and numerical constraints."
+          },
+          {
+            "value": "real-world",
+            "label": "Real-world only",
+            "description": "Problems framed in practical domain contexts like scheduling, caching, or data pipelines."
+          },
+          {
+            "value": "mixed",
+            "label": "Mixed",
+            "description": "Both LeetCode and real-world styles appear, selected based on what fits the concept."
+          }
+        ],
+        "default": "mixed",
+        "recommended": "mixed"
+      },
+      {
+        "key": "style.allowedStyles",
+        "label": "Allowed styles",
+        "description": "Which styles the generator is allowed to use. Typically matches the preference but can restrict a mixed preference to specific styles.",
+        "type": "multi-select",
+        "options": [
+          {
+            "value": "leetcode",
+            "label": "LeetCode",
+            "description": "Abstract algorithmic problems."
+          },
+          {
+            "value": "real-world",
+            "label": "Real-world",
+            "description": "Domain-context problems."
+          }
+        ],
+        "default": ["leetcode", "real-world"]
+      }
+    ]
+  },
+  {
+    "key": "language",
+    "label": "Language",
+    "description": "Controls which programming languages have test suites generated.",
+    "fields": [
+      {
+        "key": "language.preference",
+        "label": "Language preference",
+        "description": "Which language(s) to generate test suites for. Choosing both creates test files for JavaScript and Python.",
+        "type": "single-select",
+        "options": [
+          {
+            "value": "javascript",
+            "label": "JavaScript",
+            "description": "Generate Jest test suites only."
+          },
+          {
+            "value": "python",
+            "label": "Python",
+            "description": "Generate pytest test suites only."
+          },
+          {
+            "value": "both",
+            "label": "Both",
+            "description": "Generate test suites for both JavaScript and Python."
+          }
+        ],
+        "default": "both",
+        "recommended": "both"
+      }
+    ]
+  },
+  {
+    "key": "parts",
+    "label": "Parts",
+    "description": "Controls how many parts generated problems have. Parts build on each other progressively.",
+    "fields": [
+      {
+        "key": "parts.countRange",
+        "label": "Part count range",
+        "description": "The minimum and maximum number of parts a generated problem can have. More parts mean longer, multi-step problems.",
+        "type": "range",
+        "min": 1,
+        "max": 6,
+        "default": [1, 3]
+      },
+      {
+        "key": "parts.maxPartsGlobal",
+        "label": "Maximum parts (hard ceiling)",
+        "description": "Absolute maximum number of parts any generated problem can have. This ceiling is never exceeded regardless of other settings.",
+        "type": "integer",
+        "min": 1,
+        "max": 6,
+        "default": 3,
+        "recommended": "3"
+      }
+    ]
+  },
+  {
+    "key": "surpriseMode",
+    "label": "Surprise Me",
+    "description": "Controls whether generation parameters are selected randomly or asked interactively.",
+    "fields": [
+      {
+        "key": "surpriseMode.enabled",
+        "label": "Enable Surprise Me",
+        "description": "When enabled, topics, style, difficulty, and part count are selected randomly from your configured ranges. When disabled, the agent asks you for each parameter interactively.",
+        "type": "boolean",
+        "default": true,
+        "recommended": "true"
+      }
+    ]
+  },
+  {
+    "key": "hideProblemDetails",
+    "label": "Hide Problem Details",
+    "description": "Controls what information is visible during and after problem generation. Prevents seeing problem concepts, structure, or file contents before you start solving.",
+    "fields": [
+      {
+        "key": "hideProblemDetails.enabled",
+        "label": "Enable detail hiding",
+        "description": "Master switch for all detail hiding. When disabled, all hide flags below are ignored and full generation details are shown.",
+        "type": "boolean",
+        "default": true,
+        "recommended": "true"
+      },
+      {
+        "key": "hideProblemDetails.hideTopics",
+        "label": "Hide topics",
+        "description": "Prevents the agent from revealing which topics the problem covers during generation. You discover the topic by reading the problem description.",
+        "type": "boolean",
+        "default": true,
+        "recommended": "true",
+        "dependsOn": "hideProblemDetails.enabled: true"
+      },
+      {
+        "key": "hideProblemDetails.hideStyle",
+        "label": "Hide style",
+        "description": "Prevents the agent from revealing whether the problem is LeetCode or real-world style. You discover the style from the problem framing.",
+        "type": "boolean",
+        "default": true,
+        "recommended": "true",
+        "dependsOn": "hideProblemDetails.enabled: true"
+      },
+      {
+        "key": "hideProblemDetails.hidePartCount",
+        "label": "Hide part count",
+        "description": "Prevents the agent from revealing how many parts the problem has. You discover parts progressively as you solve.",
+        "type": "boolean",
+        "default": true,
+        "recommended": "true",
+        "dependsOn": "hideProblemDetails.enabled: true"
+      },
+      {
+        "key": "hideProblemDetails.hideWriteOutput",
+        "label": "Hide file output",
+        "description": "Routes all file writes through a background script so problem.json and test suite contents are not displayed in the terminal during generation. Prevents accidentally seeing test cases or problem structure.",
+        "type": "boolean",
+        "default": true,
+        "recommended": "true",
+        "dependsOn": "hideProblemDetails.enabled: true"
+      }
+    ]
+  },
+  {
+    "key": "expectedTimeRange",
+    "label": "Time Range",
+    "description": "Sets the range of expected problem-solving times in minutes.",
+    "fields": [
+      {
+        "key": "expectedTimeRange",
+        "label": "Expected time range (minutes)",
+        "description": "The minimum and maximum expected solving time for generated problems. Problems are assigned a time within this range based on their difficulty.",
+        "type": "minute-range",
+        "min": 5,
+        "max": 120,
+        "default": [20, 45]
+      }
+    ]
+  }
+]
