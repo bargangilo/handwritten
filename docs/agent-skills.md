@@ -10,22 +10,24 @@ To use skills, you need an AI coding agent with read/write access to this reposi
 
 Before using any skill:
 
-- **`config.json` must exist** at the repo root. Create it by running `/setup-config`. This file is gitignored — each user has their own.
+- **`config.json` must exist** at the repo root. Create it by running `/handwritten-config`. This file is gitignored — each user has their own.
 - **An AI coding agent** with file access to the repo (read and write). The agent must be able to read files from `.agents/context/`, `.agents/templates/`, `problems/`, and `workspace/`.
 - **Node.js** available in the environment (required for the randomization scripts in `.agents/scripts/`).
 - Verify your agent can access `.agents/context/` files before running skills — some agents restrict file access to certain directories.
 
 ## Agent-Agnostic Invocation
 
+All Handwritten skills are prefixed with `handwritten-` to distinguish them from other skills you may have installed in your agent.
+
 ### Claude Code
 
 Skills are registered as native Claude Code slash commands. Invoke any skill by typing:
 
 ```
-/generate-problem
-/setup-config
-/review-solution
-/hint
+/handwritten-generate
+/handwritten-config
+/handwritten-review
+/handwritten-hint
 ```
 
 Claude Code reads skills from `.claude/skills/<name>/SKILL.md` automatically. No additional setup or path reference is needed — the slash commands are available as soon as you open the repo as your working directory.
@@ -35,17 +37,17 @@ Claude Code reads skills from `.claude/skills/<name>/SKILL.md` automatically. No
 In Cursor's chat interface, reference the skill file explicitly:
 
 ```
-@.claude/skills/generate-problem/SKILL.md Please execute this skill.
+@.claude/skills/handwritten-generate/SKILL.md Please execute this skill.
 ```
 
-Cursor indexes the repo for file access. If the agent does not pick up the skill file automatically, paste the file path and ask it to read and follow the instructions. Cursor's Composer mode works well for multi-step skills like `/generate-problem` where files need to be written.
+Cursor indexes the repo for file access. If the agent does not pick up the skill file automatically, paste the file path and ask it to read and follow the instructions. Cursor's Composer mode works well for multi-step skills like `/handwritten-generate` where files need to be written.
 
 ### GitHub Copilot Chat
 
 Copilot Chat does not natively support slash command skill files. Reference the skill file in your message:
 
 ```
-Read the file .claude/skills/generate-problem/SKILL.md and execute the instructions in it.
+Read the file .claude/skills/handwritten-generate/SKILL.md and execute the instructions in it.
 ```
 
 If Copilot cannot access the file directly, open the skill file in your editor first so it appears in the context window, then ask Copilot to follow the instructions.
@@ -55,22 +57,22 @@ If Copilot cannot access the file directly, open the skill file in your editor f
 Pass the skill file as context when starting Aider, or add it during a session:
 
 ```bash
-aider --read .claude/skills/generate-problem/SKILL.md
+aider --read .claude/skills/handwritten-generate/SKILL.md
 ```
 
 Or during a session:
 
 ```
-/read .claude/skills/generate-problem/SKILL.md
+/read .claude/skills/handwritten-generate/SKILL.md
 ```
 
-Then ask: "Execute the skill described in generate-problem.md." Aider has full file access to the repo by default.
+Then ask: "Execute the skill described in handwritten-generate." Aider has full file access to the repo by default.
 
 ### Generic Fallback
 
 For any agent not listed above:
 
-1. Open `.claude/skills/<skill-name>/SKILL.md` and copy its full contents.
+1. Open the skill file from `.claude/skills/handwritten-<skillname>/SKILL.md` and copy its full contents.
 2. Paste the contents into the agent's context window or chat.
 3. Tell the agent: "Follow these instructions step by step. The working directory is the root of this repository."
 4. Ensure the agent has file read/write access to the repo. If it cannot read `.agents/context/` files, paste the relevant context documents into the conversation as well.
@@ -97,14 +99,14 @@ For any agent not listed above:
    This generates `.agents/skills/<name>.md` files from the canonical `.claude/skills/` source. You can also run this from the CLI's main menu via **Export Skills**. Claude Code users can skip this step — skills are available as native slash commands without it.
 
 4. **Create your config:**
-   Run `/setup-config` in your AI agent. This walks you through creating `config.json` — your personal preferences for topic focus, difficulty ranges, style, part counts, and timing. The file is gitignored; it stays local to your machine.
+   Run `/handwritten-config` in your AI agent. This walks you through creating `config.json` — your personal preferences for topic focus, difficulty ranges, style, part counts, and timing. The file is gitignored; it stays local to your machine.
 
 5. **Generate your first problem:**
-   Run `/generate-problem`. The skill will propose a concept, ask for your approval, then generate the full problem with test suites.
+   Run `/handwritten-generate`. The skill will propose a concept, ask for your approval, then generate the full problem with test suites.
 
 ## Skills Reference
 
-### `/setup-config`
+### `/handwritten-config`
 
 Creates or updates `config.json` through a guided conversation. Walks through each setting — topics, difficulty ranges, style preference, language, part counts, Surprise Me mode, and timing — and explains what each controls before asking for your preference. Writes the file only after you explicitly confirm the full configuration.
 
@@ -112,7 +114,7 @@ The skill is driven by `.agents/config-schema.json`, which is the single source 
 
 Use this when you first clone the repo, when you want to change your practice focus, or when you want to adjust difficulty or topic preferences.
 
-### `/generate-problem`
+### `/handwritten-generate`
 
 Generates a complete interview problem in two phases. First, it proposes a concept — title, description, parts overview, difficulty rating, and expected time — and waits for your approval. After approval, it generates the full `problem.json` and test suites, runs a mandatory 15-item quality checklist, and writes the files to `problems/`.
 
@@ -120,13 +122,13 @@ If Surprise Me mode is enabled in your config, the skill uses randomized paramet
 
 The generated problem is immediately available in the CLI — run `yarn start` and select it from the problem list.
 
-### `/review-solution`
+### `/handwritten-review`
 
 Reviews a completed or in-progress solution from your workspace. Delivers a structured five-tier analysis: correctness (with concrete failing inputs if applicable), time/space complexity, code quality, how the solution would be received in an interview, and alternative approaches with tradeoffs. If timing data is available from `session.json`, includes a comparison to the expected time.
 
 Use this after completing a problem to get feedback, or mid-session if you want a checkpoint review.
 
-### `/hint`
+### `/handwritten-hint`
 
 Provides a scoped hint for the current part of an active problem. You choose from three tiers:
 
@@ -177,19 +179,19 @@ Problems are rated on three independent dimensions, each 1-5:
 
 The **overall** score is a weighted composite: `round((algo × 0.3) + (ds × 0.3) + (problem × 0.4))`. Problem complexity carries the most weight because it best predicts interview performance independent of algorithm memorization.
 
-When configuring difficulty ranges in `/setup-config`, set each dimension independently. For example, you might set algorithm complexity to 1-2 (you want to focus on problem decomposition, not algorithm recall) while setting problem complexity to 3-4.
+When configuring difficulty ranges in `/handwritten-config`, set each dimension independently. For example, you might set algorithm complexity to 1-2 (you want to focus on problem decomposition, not algorithm recall) while setting problem complexity to 3-4.
 
 See `.agents/context/difficulty-guide.md` for the full dimension definitions, calibration anchors, and rating guidance.
 
 ## Troubleshooting
 
-**`config.json` not found.** Run `/setup-config` to create it. The file is gitignored and personal to each user — it is not included in the repo.
+**`config.json` not found.** Run `/handwritten-config` to create it. The file is gitignored and personal to each user — it is not included in the repo.
 
 **`randomize-params.js` exits with an error.** Verify that Node.js is available (`node --version`) and that `config.json` contains valid JSON with all required fields. The error message printed to stderr describes the specific issue.
 
 **Agent cannot access context files.** Verify that your agent has file access to the repo root and specifically to `.agents/context/`. Some agents restrict access to certain directories — check your agent's file access configuration.
 
-**Generated problem has wrong difficulty or style.** The generation parameters come from `config.json` (or from `randomize-params.js` in Surprise Me mode). Run `/setup-config` to review and update your configuration. If using Surprise Me mode, the randomization is bounded by your configured ranges — adjust the ranges to narrow the output.
+**Generated problem has wrong difficulty or style.** The generation parameters come from `config.json` (or from `randomize-params.js` in Surprise Me mode). Run `/handwritten-config` to review and update your configuration. If using Surprise Me mode, the randomization is bounded by your configured ranges — adjust the ranges to narrow the output.
 
 **Test names in `activeTests` do not match suite file.** This causes tests to silently not run, blocking part advancement. Every string in `activeTests` must exactly match the `test("...")` string in Jest or the function name (minus `test_` prefix, underscores for spaces) in pytest. See `.agents/context/problem-authoring-guide.md` Section 3 for the verification procedure.
 

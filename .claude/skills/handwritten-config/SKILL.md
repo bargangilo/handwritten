@@ -1,5 +1,5 @@
 ---
-name: setup-config
+name: handwritten-config
 description: Creates or updates config.json through a guided conversation covering topics, difficulty, style, and timing.
 ---
 
@@ -61,7 +61,7 @@ Creates or updates the user's `config.json` file through a guided conversation. 
 
 5. **Write the file.** Once the user explicitly confirms, write `config.json` to the repo root. Use `.agents/templates/config-template.json` as the structural base. Set `createdAt` to the current ISO 8601 timestamp if this is a new file. Set `updatedAt` to the current ISO 8601 timestamp always.
 
-6. **Confirm to the user:** "config.json has been saved. You can re-run /setup-config at any time to update your preferences. Run /generate-problem to create your first problem."
+6. **Confirm to the user:** "config.json has been saved. You can re-run /handwritten-config at any time to update your preferences. Run /handwritten-generate to create your first problem."
 
 ## Constraints
 

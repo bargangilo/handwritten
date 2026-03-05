@@ -1,5 +1,5 @@
 ---
-name: hint
+name: handwritten-hint
 description: Provides a scoped, tiered hint for the current part of an active problem without revealing future parts or test structure.
 ---
 

@@ -15,7 +15,7 @@ Every problem in this tool is defined by a `problem.json` file in `problems/<nam
 | `style` | string | No | Problem style: `"leetcode"` (algorithmic, well-defined inputs/outputs) or `"real-world"` (practical scenario, open-ended design). Used by agent skills for generation targeting. The CLI does not read this field. |
 | `expectedMinutes` | integer | No | Suggested time limit in minutes. Pre-populates the countdown prompt at session start. See [stats-and-timer.md](stats-and-timer.md) for how this integrates with the timer. |
 | `generatedBy` | string | No | Origin of the problem: `"manual"` for hand-authored, `"agent"` for AI-generated. The CLI does not read this field. |
-| `generatedAt` | string | No | ISO 8601 timestamp of when the problem was generated. Empty string for manually authored problems. Set automatically by the generate-problem skill. The CLI does not read this field. |
+| `generatedAt` | string | No | ISO 8601 timestamp of when the problem was generated. Empty string for manually authored problems. Set automatically by the handwritten-generate skill. The CLI does not read this field. |
 | `parts` | array | **Yes** | Ordered list of part objects. Must contain at least one entry. |
 
 ### Difficulty Object

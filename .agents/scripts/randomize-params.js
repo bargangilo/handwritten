@@ -130,7 +130,7 @@ function main() {
   // Read config
   if (!fs.existsSync(configPath)) {
     process.stderr.write(
-      "Error: config.json not found. Run the /setup-config agent skill first.\n"
+      "Error: config.json not found. Run the /handwritten-config agent skill first.\n"
     );
     process.exit(1);
   }

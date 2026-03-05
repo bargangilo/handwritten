@@ -109,7 +109,7 @@ Exports agent skill files from `.claude/skills/` to `.agents/skills/` for use wi
 
 The repo includes an agent skills system for AI-powered problem generation, progressive hints, and solution review. Skills are instruction documents that any AI coding agent can execute — they read configuration and problem data from the filesystem, generate new problems and test suites, and provide feedback on solutions. The CLI has zero dependency on the agent skills system; it does not require an API key and never invokes an agent at runtime.
 
-Four skills are available: `/setup-config` creates your personal `config.json`, `/generate-problem` produces complete problem definitions with test suites, `/hint` provides tiered hints during a session, and `/review-solution` delivers structured feedback on completed solutions.
+Four skills are available: `/handwritten-config` creates your personal `config.json`, `/handwritten-generate` produces complete problem definitions with test suites, `/handwritten-hint` provides tiered hints during a session, and `/handwritten-review` delivers structured feedback on completed solutions.
 
 ![Problem generation](docs/media/generate-problem.png)
 
