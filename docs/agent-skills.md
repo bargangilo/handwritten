@@ -134,17 +134,20 @@ Provides a scoped hint for the current part of an active problem. You choose fro
 
 The hint is strictly scoped to the current part. It will never reveal how many parts the problem has, what future parts contain, how many tests exist, or what edge cases are tested. This preserves the progressive revelation design of the problem system.
 
-## Surprise Me Mode
+## Surprise Me Mode and Detail Hiding
 
-Surprise Me mode randomizes generation parameters so you do not know the exact topic, style, or part count of a problem before you start solving it. This simulates the unpredictability of real interviews.
+Two independent config sections control generation behavior:
 
-### Enabling Surprise Me
+**`surpriseMode`** randomizes generation parameters (topics, style, difficulty, part count) so you do not know what to expect. This simulates the unpredictability of real interviews. When disabled, the agent asks for each parameter interactively.
 
-Run `/setup-config` and enable Surprise Me when prompted. You can also control what information is revealed when a problem session starts:
+**`hideProblemDetails`** controls what information is visible to you during and after generation. When enabled, individual flags control what is hidden:
 
-- **`revealTopicOnStart`** — if true, the topic is shown when the problem is generated. If false, you discover the topic by reading the problem description.
-- **`revealStyleOnStart`** — if true, you are told whether the problem is LeetCode or real-world style. If false, you discover the style from the problem framing.
-- **`revealPartCountOnStart`** — if true, you are told how many parts the problem has. If false, you discover parts progressively as you solve.
+- **`hideTopics`** — when true, topics are not revealed during generation. You discover the topic by reading the problem description.
+- **`hideStyle`** — when true, the style (LeetCode vs real-world) is not revealed. You discover the style from the problem framing.
+- **`hidePartCount`** — when true, the number of parts is never mentioned. You discover parts progressively as you solve.
+- **`hideWriteOutput`** — when true, file contents are written through a script (`.agents/scripts/write-problem.js`) so they do not appear in the terminal.
+
+These two features compose independently. You can use Surprise Me with full visibility (random parameters, everything shown), or interactive selection with hidden output (you choose topics but do not see the generated files), or any other combination. See `docs/problem-schema.md` for the full behavior matrix.
 
 ### Reproducibility
 

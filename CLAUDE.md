@@ -130,6 +130,7 @@ Runner unit tests live in `tests/runner/` and cover config loading, workspace ma
 | `tests/runner/stats.test.js` | Stats computation, session I/O, streak, time formatting |
 | `tests/scripts/topic-weights.test.js` | Topic weight computation, avoid list, recency penalties, normalization |
 | `tests/scripts/randomize-params.test.js` | CLI output shape, reproducibility, error handling, constraint validation |
+| `tests/scripts/write-problem.test.js` | Write script: payload validation, file writing, path traversal guard, draft cleanup |
 
 ### Patterns
 
@@ -175,6 +176,8 @@ The CLI and skills interact exclusively through the filesystem: skills write `pr
 When adding new fields to `problem.json`, update `docs/problem-schema.md`, `.agents/templates/problem-schema-template.json`, and the worked examples in both files atomically.
 
 The three documents in `.agents/context/` are the knowledge foundation for all agent skills. When the `problem.json` schema changes, update `problem-authoring-guide.md` atomically. When difficulty calibration anchors need updating, update `difficulty-guide.md`.
+
+Generation behavior is controlled by two independent config fields: `surpriseMode` (controls whether parameters are randomized or asked interactively) and `hideProblemDetails` (controls what information is shown to the user during and after generation). When `hideProblemDetails.hideWriteOutput` is true, agent skills must route all problem file writes through `.agents/scripts/write-problem.js` rather than using direct file write tools — this prevents file contents from appearing in the terminal during generation.
 
 The randomization scripts in `.agents/scripts/` have unit tests in `tests/scripts/` — run `yarn test` to verify them. If `config.json` schema changes, update both scripts and their tests.
 

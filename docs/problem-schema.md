@@ -261,3 +261,32 @@ def test_single_number_nested_deep():
 ## Agent-Generated vs. Manually Authored Problems
 
 The `generatedBy` field distinguishes problems created by AI agent skills (`"agent"`) from those written by hand (`"manual"`). Manually authored problems may omit `topics`, `difficulty`, `style`, `generatedBy`, and `generatedAt` without affecting CLI behavior — the CLI does not read any of these fields. Agent-generated problems must always include all fields so that agent skills can filter, select, and avoid duplicating topics or difficulty levels across the problem set.
+
+## Agent Config: `surpriseMode` and `hideProblemDetails`
+
+Two top-level fields in `config.json` control how agent skills generate and present problems. They are independent and compose together.
+
+### `surpriseMode`
+
+| Field | Type | Description |
+|---|---|---|
+| `enabled` | boolean | When true, generation parameters (topics, style, difficulty, part count) are selected randomly via the randomization script. When false, the agent asks the user interactively for each parameter. |
+
+### `hideProblemDetails`
+
+| Field | Type | Description |
+|---|---|---|
+| `enabled` | boolean | Master switch. When false, all `hide*` sub-fields are ignored regardless of their individual values. |
+| `hideTopics` | boolean | When true, topics are not revealed to the user at any point during generation. |
+| `hideStyle` | boolean | When true, the style (LeetCode or real-world) is not revealed. |
+| `hidePartCount` | boolean | When true, the number of parts is never mentioned during or after generation. |
+| `hideWriteOutput` | boolean | When true, all file writing goes through the write script (`.agents/scripts/write-problem.js`) to prevent file contents from appearing in the terminal. |
+
+### Behavior Matrix
+
+| `surpriseMode.enabled` | `hideProblemDetails.enabled` | Behavior |
+|---|---|---|
+| true | true | Random parameters, nothing revealed during generation |
+| false | true | Interactive parameter selection, generation output hidden |
+| true | false | Random parameters, full generation detail shown |
+| false | false | Interactive parameter selection, fully transparent output |

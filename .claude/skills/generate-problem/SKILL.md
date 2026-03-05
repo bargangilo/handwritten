@@ -22,18 +22,42 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 1. **Determine generation parameters.**
 
-   Check whether the user has provided any explicit parameters with this invocation (e.g. "generate a problem about trees", "difficulty 3", "real-world style", "2 parts"). Accept any provided overrides — these take priority over randomized or default parameters.
+   Begin by reading `config.json`. Then examine everything the user provided with this invocation — structured overrides, free-form text, pasted content, interview prep notes, or any natural language description.
 
-   For parameters not explicitly provided by the user:
+   **Parse user input first, before touching config or running any script:**
 
-   a. If `config.json` has `surpriseMode.enabled: true`: run `node .agents/scripts/randomize-params.js` from the repo root. Parse the JSON output. These are the generation parameters for any dimension the user did not override. Tell the user: "Using seed [N] for this generation. Keep this if you want to regenerate with the same parameters." What you reveal about the parameters is controlled by the `surpriseMode.reveal*` flags:
-      - If `revealTopicOnStart` is false: do not tell the user the selected topics.
-      - If `revealStyleOnStart` is false: do not tell the user the selected style.
-      - If `revealPartCountOnStart` is false: do not tell the user the part count.
+   If the user provided any input beyond the bare `/generate-problem` command, treat it as potential parameter signal regardless of format. Extract:
+   - Topic or concept signals — any CS concept, domain, data structure, or problem type mentioned
+   - Style signals — abstract/algorithmic language suggests LeetCode; business domain, system descriptions, or scenario narratives suggest real-world
+   - Difficulty signals — words like "easy," "basic," "warm-up" map to lower ranges; "senior," "tricky," "advanced" map to higher ranges
+   - Part count signals — "quick," "single function," "one thing" suggest 1 part; "then extend," "multi-step," "follow-up" suggest 2-3 parts
+   - Time signals — any mention of interview duration or time pressure maps to `expectedMinutes`
 
-   b. If `surpriseMode.enabled` is false: use config defaults as the baseline. For any parameter not fully determined by config defaults (e.g. specific topics from the include list, exact difficulty values within ranges), ask the user interactively.
+   Map extracted signals to generation parameters. If a signal is ambiguous, prefer the user's stated intent over config defaults.
 
-   Enforce `maxPartsGlobal` from `config.json` as a hard ceiling on part count regardless of parameter source. If any source specifies a part count above this ceiling, cap it silently and note the cap to the user: "Part count capped to [N] per your config.json maxPartsGlobal setting."
+   **Apply parameters in this precedence order — strictly:**
+
+   1. Explicit structured user overrides (highest priority — always win)
+   2. Parameters extracted and inferred from free-form user input
+   3. `surpriseMode` random selection — only for dimensions not covered by steps 1 or 2
+   4. `config.json` defaults (lowest priority)
+
+   `hideProblemDetails` is orthogonal to all of the above. It controls output behavior, not parameter selection. Determine it from config and apply it throughout all subsequent steps regardless of how parameters were selected.
+
+   **For parameters not covered by user input:**
+
+   a. If `surpriseMode.enabled` is true: run `node .agents/scripts/randomize-params.js` from the repo root. Use its output only for dimensions not already determined by user input. Log the seed: "Using seed [N]."
+
+   b. If `surpriseMode.enabled` is false: ask the user interactively for each remaining parameter dimension. Walk through them conversationally, one at a time.
+
+   **Enforce `maxPartsGlobal`** as a hard ceiling regardless of parameter source. If user input implies more parts than `maxPartsGlobal`, cap it silently and note the cap in any confirmation shown.
+
+   **After determining all parameters:**
+
+   - If the user provided free-form input AND `hideProblemDetails.enabled` is false: show a one-sentence confirmation of how you interpreted their input (e.g. "I read that as: real-world style, JSON traversal topic, single part.") and wait for a brief acknowledgment before proceeding.
+   - If the user provided free-form input AND `hideProblemDetails.enabled` is true: show only "Understood — generating now." Do not echo back any inferred parameters.
+   - If the user provided no input and `surpriseMode.enabled` is true: proceed directly to Step 2 with no confirmation.
+   - If the user provided no input and `surpriseMode.enabled` is false: you have already collected parameters interactively, proceed to Step 2.
 
 2. **Research the concept.**
 
@@ -47,9 +71,9 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 3. **Generate and present concept proposal.**
 
-   Generate the full concept internally — working title, description, parts overview, difficulty object with justifications, and expected minutes — following all authoring rules. Then present the proposal based on whether Surprise Me mode is active.
+   Generate the full concept internally — working title, description, parts overview, difficulty object with justifications, and expected minutes — following all authoring rules. Then present the proposal based on the `hideProblemDetails` config.
 
-   **If `surpriseMode.enabled` is false:**
+   **If `hideProblemDetails.enabled` is false:**
 
    Present the full proposal to the user:
 
@@ -65,23 +89,14 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
    Present this proposal and ask: "Does this concept look good, or would you like any changes?" Wait for explicit approval. If the user requests changes, revise the proposal and present it again. Do not proceed to step 4 without approval.
 
-   **If `surpriseMode.enabled` is true:**
+   **If `hideProblemDetails.enabled` is true:**
 
-   Keep the full proposal (title, parts, difficulty justifications) internal — do not show it to the user. Apply each reveal flag independently to determine what to include in the user-facing prompt:
+   Keep the full proposal internal — you still need it for accurate generation. Do not show the title, part count, part descriptions, difficulty details, or any concept-specific information to the user. The master switch overrides all individual `hide*` sub-flags. Show only a brief confirmation prompt:
 
-   - `revealTopicOnStart: false` → do not mention topics, concept domain, algorithm category, or data structures.
-   - `revealStyleOnStart: false` → do not mention whether the problem is LeetCode or real-world style.
-   - `revealPartCountOnStart: false` → do not mention how many parts the problem has, do not show a parts overview, do not number or describe individual parts.
+   - If `surpriseMode.enabled` is true: "I have a problem ready. Shall I proceed with generation?"
+   - If `surpriseMode.enabled` is false (user specified parameters interactively): "Ready to generate. Shall I proceed?"
 
-   When all three flags are false (the default), show only a confirmation prompt with no problem-specific information:
-
-   > "I have a problem ready. Shall I proceed with generation?"
-
-   When some flags are true, reveal only what those flags permit. For example, if `revealTopicOnStart` is true but the other two are false:
-
-   > "I have a problem ready involving hash maps and arrays. Shall I proceed?"
-
-   Wait for explicit user confirmation before proceeding. If the user requests changes (e.g. "pick a different topic"), revise internally and present a new prompt following the same reveal rules. Do not proceed to step 4 without approval.
+   Wait for explicit user confirmation before proceeding. Do not proceed to step 4 without approval.
 
 4. **Confirm language.**
 
@@ -137,29 +152,67 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 8. **Write files.**
 
-   Create the problem directory `problems/<kebab-case-name>/` and write:
+   **If `hideProblemDetails.hideWriteOutput` is false OR `hideProblemDetails.enabled` is false:**
+
+   Create the problem directory `problems/<kebab-case-name>/` and write files directly:
    - `problem.json`
    - `suite.test.js` (if JavaScript was selected)
    - `suite.test.py` (if Python was selected)
 
    Confirm exact file paths written to the user: "Files written: problems/<name>/problem.json, problems/<name>/suite.test.js"
 
+   **If `hideProblemDetails.hideWriteOutput` is true AND `hideProblemDetails.enabled` is true:**
+
+   Do not use the Write tool directly for any problem files. Instead:
+
+   a. Construct a draft payload as a JSON object matching the schema expected by `.agents/scripts/write-problem.js`:
+   ```json
+   {
+     "problemName": "<kebab-case-problem-name>",
+     "files": [
+       {
+         "relativePath": "problems/<name>/problem.json",
+         "content": "<complete file content as string>"
+       },
+       {
+         "relativePath": "problems/<name>/suite.test.js",
+         "content": "<complete file content as string>"
+       }
+     ]
+   }
+   ```
+   Include only the files being generated (omit `suite.test.py` if Python was not selected).
+
+   b. Create the `.agents/.draft/` directory if it does not exist.
+
+   c. Write the payload to `.agents/.draft/pending.json`. This is the only direct file write in this branch — its content is a transit payload, not a readable problem file.
+
+   d. Run `node .agents/scripts/write-problem.js` from the repo root. If it exits with a non-zero code, report the error from stderr to the user and stop.
+
+   e. Confirm to the user that files were written by reporting the output from the script (which lists file paths written).
+
 9. **Post-generation summary.**
 
-   Always tell the user:
+   **If `hideProblemDetails.enabled` is false:**
+
+   Tell the user:
+   - The problem title
+   - The language(s) generated
+   - The `expectedMinutes` value
+   - Topics, style, and overall difficulty
+   - "Run `yarn start` and select this problem to begin."
+
+   Never mention part count or per-part details in the summary, regardless of config.
+
+   **If `hideProblemDetails.enabled` is true:**
+
+   Tell the user only:
    - The problem title
    - The language(s) generated
    - The `expectedMinutes` value
    - "Run `yarn start` and select this problem to begin."
 
-   If `surpriseMode.enabled` is false, also include topics, style, and overall difficulty.
-
-   If `surpriseMode.enabled` is true, apply reveal flags:
-   - Only include topics if `revealTopicOnStart` is true.
-   - Only include style if `revealStyleOnStart` is true.
-   - Do not include overall difficulty or difficulty justifications.
-
-   Never mention part count or per-part details in the summary, regardless of config.
+   Do not mention topics, style, part count, difficulty ratings, or any structural information about the problem. Do not mention that details are being hidden.
 
 ## Constraints
 
@@ -170,6 +223,10 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 5. `generatedAt` must be set to the actual current ISO 8601 timestamp, not a placeholder or empty string.
 6. Do not generate a problem with the same core concept as an existing problem in `problems/`. If the randomized parameters point toward a concept that already exists, pick a different concept within the same topic/difficulty space.
 7. The directory name under `problems/` must be lowercase-with-hyphens (kebab-case) derived from the title.
+8. When `hideProblemDetails.enabled` is true, the master switch overrides all individual `hide*` sub-flags — behave as if all sub-flags are true regardless of their individual values.
+9. When `hideProblemDetails.hideWriteOutput` is true, never use the Write tool directly for `problem.json`, `suite.test.js`, or `suite.test.py` — always route through `.agents/scripts/write-problem.js`.
+10. Never echo back inferred parameters to the user when `hideProblemDetails.enabled` is true — not in confirmations, not in proposals, not in summaries.
+11. User-provided input always takes precedence over config defaults and Surprise Me randomization for the dimensions it covers — never discard user context in favor of random selection.
 
 ## Output
 

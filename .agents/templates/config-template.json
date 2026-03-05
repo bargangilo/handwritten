@@ -22,10 +22,28 @@
     "maxPartsGlobal": 4
   },
   "surpriseMode": {
+    "_comment": "When enabled, generation parameters (topics, style, difficulty, part count) are selected randomly via the randomization script. When disabled, the agent asks the user interactively for each parameter.",
+    "enabled": true
+  },
+  "hideProblemDetails": {
+    "_comment": "Master switch for hiding problem details during generation. When enabled is false, all hide* flags are ignored.",
     "enabled": true,
-    "revealTopicOnStart": false,
-    "revealStyleOnStart": false,
-    "revealPartCountOnStart": false
+    "hideTopics": {
+      "_comment": "When true, topics are not revealed to the user at any point during generation.",
+      "value": true
+    },
+    "hideStyle": {
+      "_comment": "When true, the style (LeetCode or real-world) is not revealed.",
+      "value": true
+    },
+    "hidePartCount": {
+      "_comment": "When true, the number of parts is never mentioned during or after generation.",
+      "value": true
+    },
+    "hideWriteOutput": {
+      "_comment": "When true, all file writing goes through the write script (.agents/scripts/write-problem.js) to prevent file contents from appearing in the terminal.",
+      "value": true
+    }
   },
   "expectedTimeRange": [20, 45],
   "createdAt": "",

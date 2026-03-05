@@ -22,10 +22,14 @@
     "maxPartsGlobal": 4
   },
   "surpriseMode": {
+    "enabled": true
+  },
+  "hideProblemDetails": {
     "enabled": true,
-    "revealTopicOnStart": false,
-    "revealStyleOnStart": false,
-    "revealPartCountOnStart": false
+    "hideTopics": true,
+    "hideStyle": true,
+    "hidePartCount": true,
+    "hideWriteOutput": true
   },
   "expectedTimeRange": [20, 45],
   "createdAt": "",

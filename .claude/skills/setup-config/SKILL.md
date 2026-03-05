@@ -47,14 +47,20 @@ Creates or updates the user's `config.json` file through a guided conversation. 
    Ask for their preferred range (e.g. "1-3"). Then ask them to confirm a maxPartsGlobal value. Recommend 3 for most interview prep. If they want more, accept up to 6 but not higher.
 
    f. **Surprise Me Mode**
-   Explain: "Surprise Me mode lets the system pick topics, style, and part count randomly based on your configured preferences, so you don't know exactly what's coming when you start a problem."
-   Ask if they want this enabled. If yes, ask about each reveal flag separately:
-   - "When you start a problem, should the topic be shown?" (`revealTopicOnStart`)
-   - "Should the style (LeetCode vs real-world) be shown?" (`revealStyleOnStart`)
-   - "Should the number of parts be shown?" (`revealPartCountOnStart`)
-   Explain what each flag controls concretely before asking.
+   Explain: "Surprise Me controls whether generation parameters are selected randomly. When enabled, the system picks topics, style, difficulty, and part count automatically based on your configured preferences rather than asking you each time."
+   Ask if they want this enabled.
+   Note: Surprise Me and problem detail hiding are separate settings — Surprise Me is about how parameters are chosen, not about what gets shown during generation.
 
-   g. **Time Range**
+   g. **Hide Problem Details**
+   Explain: "Hiding problem details controls what gets revealed during generation — preventing the agent from showing the problem concept, structure, or test suite content in the terminal before you start solving. This is useful whether or not Surprise Me is enabled."
+   Ask if they want detail hiding enabled. If yes, confirm each sub-flag:
+   - "Hide topics — should the agent avoid revealing what topics the problem covers?" (`hideTopics`)
+   - "Hide style — should the agent avoid revealing whether it's LeetCode or real-world style?" (`hideStyle`)
+   - "Hide part count — should the agent avoid revealing how many parts the problem has?" (`hidePartCount`)
+   - "Hide write output — should problem files be written silently via a script so their contents are not displayed in the terminal during generation? (Recommended: yes)" (`hideWriteOutput`)
+   Explain `hideWriteOutput` specifically: "When enabled, problem files are written through a background script rather than being shown in the terminal. This prevents you from accidentally seeing test cases or problem structure before you start solving. We recommend enabling this for the best experience."
+
+   h. **Time Range**
    Ask: "What range of expected problem-solving times do you want to practice with? For example, 20-45 minutes." Accept a range in minutes.
 
 3. **Display full summary.** After all sections are collected, display a complete human-readable summary of the full configuration in plain English. Example format:
@@ -67,7 +73,8 @@ Creates or updates the user's `config.json` file through a guided conversation. 
    Style: mixed (LeetCode and real-world)
    Languages: JavaScript and Python
    Parts: 1-3 (max 3)
-   Surprise Me: enabled (topic hidden, style hidden, part count hidden)
+   Surprise Me: enabled (parameters chosen randomly)
+   Hide details: enabled (topics hidden, style hidden, part count hidden, file output hidden)
    Time range: 20-45 minutes
    ```
    Ask: "Does this look right? Type yes to save, or describe what you'd like to change."
