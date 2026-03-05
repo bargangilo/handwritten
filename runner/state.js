@@ -54,6 +54,10 @@ export const Action = {
   SETTINGS_FIELD_SAVED: "SETTINGS_FIELD_SAVED",
   SETTINGS_BACK: "SETTINGS_BACK",
 
+  // Session
+  TEST_RESULT_RECEIVED: "TEST_RESULT_RECEIVED",
+  WATCHER_ERROR: "WATCHER_ERROR",
+
   // Navigation
   BACK: "BACK",
 };
@@ -75,6 +79,9 @@ export const initialState = {
   statsSession: null,
   clearProblem: null,
   clearConfig: null,
+  // Session result context
+  consoleOutput: [],
+  watcherError: null,
   // Settings context
   configSchema: null,
   configValues: null,
@@ -205,6 +212,12 @@ export function reducer(state, action) {
       }
       return { ...state, screen: Screen.MAIN_MENU, configSchema: null, configValues: null };
     }
+
+    // --- Session ---
+    case Action.TEST_RESULT_RECEIVED:
+      return { ...state, consoleOutput: action.consoleOutput || [], watcherError: null };
+    case Action.WATCHER_ERROR:
+      return { ...state, watcherError: action.message };
 
     // --- Navigation ---
     case Action.BACK: {

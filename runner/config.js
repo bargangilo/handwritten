@@ -3,6 +3,8 @@ import fs from "fs";
 
 const CONFIG_SCHEMA_PATH = ".agents/config-schema.json";
 const USER_CONFIG_PATH = "config.json";
+const RUNNER_CONFIG_PATH = "runner.config.json";
+const RUNNER_CONFIG_DEFAULTS = { testTimeoutSeconds: 20 };
 
 const COMPLETION_MARKER_JS = "\n// ---- COMPLETE ----\n";
 const COMPLETION_MARKER_PY = "\n# ---- COMPLETE ----\n";
@@ -210,6 +212,23 @@ export function writeUserConfig(configObject, rootDir) {
   const configPath = path.join(rootDir, USER_CONFIG_PATH);
   const updated = { ...configObject, updatedAt: new Date().toISOString() };
   fs.writeFileSync(configPath, JSON.stringify(updated, null, 2) + "\n", "utf8");
+}
+
+/**
+ * Reads runner.config.json from the repo root.
+ * Returns the parsed config object.
+ * Returns defaults if the file does not exist or is malformed.
+ * Never throws.
+ */
+export function loadRunnerConfig(rootDir) {
+  try {
+    const configPath = path.join(rootDir, RUNNER_CONFIG_PATH);
+    if (!fs.existsSync(configPath)) return { ...RUNNER_CONFIG_DEFAULTS };
+    const raw = JSON.parse(fs.readFileSync(configPath, "utf8"));
+    return { testTimeoutSeconds: raw.testTimeoutSeconds ?? RUNNER_CONFIG_DEFAULTS.testTimeoutSeconds };
+  } catch {
+    return { ...RUNNER_CONFIG_DEFAULTS };
+  }
 }
 
 /**

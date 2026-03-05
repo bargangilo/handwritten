@@ -65,7 +65,10 @@ Interactive components use `Select`, `TextInput`, and `MultiSelect` from `@inkjs
 | `problems/<name>/` | Problem config, stubs, test suites | Never |
 | `workspace/<name>/main.js`, `main.py` | Active solution file | Yes (scaffold, part appends, completion marker) |
 | `workspace/<name>/session.json` | Timer state, attempt history | Yes (every tick + session end) |
+| `runner.config.json` | Runner behavior configuration (timeout, etc.) | No |
 | `tests/runner/` | Runner unit tests | Never |
+
+`runner.config.json` is committed and represents project defaults. `loadRunnerConfig()` always returns a usable object — it never throws and falls back to hardcoded defaults if the file is missing or malformed.
 
 Problem test suites (`suite.test.js`, `sample.test.js`, etc.) live inside `problems/<name>/`. They are excluded from `yarn test` via `testPathIgnorePatterns` in `package.json`.
 

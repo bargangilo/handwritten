@@ -77,10 +77,14 @@ export default function SessionActive({
   resumeData,
   rootDir,
 }) {
-  const [testState, setTestState] = useState({ passed: 0, total: 0, timestamp: Date.now(), running: false });
+  const [testState, setTestState] = useState({
+    passed: 0, total: 0, timestamp: Date.now(), running: false,
+    timedOut: false, crashed: false, timeoutSeconds: null, exitCode: null,
+  });
   const [partInfo, setPartInfo] = useState(null);
   const [timerDisplay, setTimerDisplay] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   const timerRef = useRef(null);
   const watcherRef = useRef(null);
@@ -199,9 +203,19 @@ export default function SessionActive({
       onTestStart: () => {
         setTestState((prev) => ({ ...prev, running: true }));
       },
-      onTestResult: ({ passed, total, timestamp, partInfo: pi }) => {
-        setTestState({ passed, total, timestamp, running: false });
-        if (pi) setPartInfo(pi);
+      onTestResult: (result) => {
+        setTestState({
+          passed: result.passed,
+          total: result.total,
+          timestamp: result.timestamp,
+          running: false,
+          timedOut: !!result.timedOut,
+          crashed: !!result.crashed,
+          timeoutSeconds: result.timeoutSeconds || null,
+          exitCode: result.exitCode || null,
+        });
+        if (result.partInfo) setPartInfo(result.partInfo);
+        setErrorMessage(null);
       },
       onPartAdvanced: ({ completedPart, nextTitle, nextDescription, splitSeconds }) => {
         const splitStr = splitSeconds != null ? ` [Part ${completedPart} time: ${formatSeconds(splitSeconds)}]` : "";
@@ -239,6 +253,9 @@ export default function SessionActive({
       },
       onTimerTick: ({ timerDisplay: td }) => {
         setTimerDisplay(td);
+      },
+      onError: (err) => {
+        setErrorMessage(err.message || String(err));
       },
     });
     watcherRef.current = watcher;
@@ -349,7 +366,11 @@ export default function SessionActive({
       </Static>
 
       {testState.running ? (
-        <Text color="gray">{"  "}⟳ Running tests...</Text>
+        <Text color="gray">{"  "}{"\u27F3"} Running tests...</Text>
+      ) : testState.timedOut ? (
+        <Text color="yellow">{"  "}{"\u23F8"} Test run timed out after {testState.timeoutSeconds}s {"\u2014"} check for infinite loops or hanging code</Text>
+      ) : testState.crashed ? (
+        <Text color="red">{"  "}{"\u2716"} Test runner crashed (exit code {testState.exitCode}) {"\u2014"} check for syntax errors or runtime exceptions</Text>
       ) : (
         <SummaryLine
           passed={testState.passed}
@@ -359,6 +380,9 @@ export default function SessionActive({
           timerDisplay={timerDisplay}
         />
       )}
+      {errorMessage ? (
+        <Text color="red">{"  "}Runner error: {errorMessage} {"\u2014"} save again to retry</Text>
+      ) : null}
     </>
   );
 }

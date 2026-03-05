@@ -5,14 +5,74 @@ jest.mock("fs");
 jest.mock("child_process");
 jest.mock("chokidar");
 
+import { spawn } from "child_process";
+import chokidar from "chokidar";
+
 import {
   buildTestFilter,
   inferCurrentPart,
   appendPartScaffold,
   writeCompletionMarker,
+  loadRunnerConfig,
 } from "../../runner/config.js";
+import { startWatching } from "../../runner/watcher.js";
 
 import sampleConfig from "./fixtures/sample-problem.json";
+
+// --- Helper: create a controllable mock child process ---
+
+function createMockProcess() {
+  const listeners = {};
+  const stdoutListeners = {};
+  const stderrListeners = {};
+
+  return {
+    stdout: {
+      on: jest.fn((event, handler) => {
+        stdoutListeners[event] = stdoutListeners[event] || [];
+        stdoutListeners[event].push(handler);
+      }),
+    },
+    stderr: {
+      on: jest.fn((event, handler) => {
+        stderrListeners[event] = stderrListeners[event] || [];
+        stderrListeners[event].push(handler);
+      }),
+    },
+    on: jest.fn((event, handler) => {
+      listeners[event] = listeners[event] || [];
+      listeners[event].push(handler);
+    }),
+    kill: jest.fn(),
+    emit(event, ...args) {
+      (listeners[event] || []).forEach((h) => h(...args));
+    },
+    emitStdout(data) {
+      (stdoutListeners["data"] || []).forEach((h) => h(Buffer.from(data)));
+    },
+  };
+}
+
+function createMockWatcher() {
+  return { on: jest.fn().mockReturnThis(), close: jest.fn() };
+}
+
+function setupRunnerConfigMock(config = { testTimeoutSeconds: 5 }) {
+  fs.existsSync.mockImplementation((p) => {
+    if (typeof p === "string" && p.includes("runner.config.json")) return true;
+    return false;
+  });
+  fs.readFileSync.mockImplementation((p, enc) => {
+    if (typeof p === "string" && p.includes("runner.config.json")) return JSON.stringify(config);
+    return "";
+  });
+}
+
+const flush = async () => {
+  await Promise.resolve();
+  await Promise.resolve();
+  await Promise.resolve();
+};
 
 // --- Part state inference ---
 
@@ -275,5 +335,182 @@ describe("writeCompletionMarker", () => {
     const writtenPath = fs.appendFileSync.mock.calls[0][0];
     expect(writtenPath).toContain("workspace");
     expect(writtenPath).not.toMatch(/\/problems\//);
+  });
+});
+
+// --- loadRunnerConfig ---
+
+describe("loadRunnerConfig", () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  test("returns defaults when file does not exist", () => {
+    fs.existsSync.mockReturnValue(false);
+    const config = loadRunnerConfig("/fake");
+    expect(config).toEqual({ testTimeoutSeconds: 20 });
+  });
+
+  test("returns defaults when file is malformed JSON", () => {
+    fs.existsSync.mockReturnValue(true);
+    fs.readFileSync.mockReturnValue("not valid json {{{");
+    const config = loadRunnerConfig("/fake");
+    expect(config).toEqual({ testTimeoutSeconds: 20 });
+  });
+
+  test("returns parsed values when file is valid", () => {
+    fs.existsSync.mockReturnValue(true);
+    fs.readFileSync.mockReturnValue(JSON.stringify({ testTimeoutSeconds: 30 }));
+    const config = loadRunnerConfig("/fake");
+    expect(config).toEqual({ testTimeoutSeconds: 30 });
+  });
+});
+
+// --- Watcher process behavior ---
+
+describe("watcher process behavior", () => {
+  let mockProc;
+  let mockWatcherObj;
+
+  beforeEach(() => {
+    mockProc = createMockProcess();
+    mockWatcherObj = createMockWatcher();
+    spawn.mockReturnValue(mockProc);
+    chokidar.watch.mockReturnValue(mockWatcherObj);
+    setupRunnerConfigMock({ testTimeoutSeconds: 5 });
+  });
+
+  afterEach(() => jest.restoreAllMocks());
+
+  test("exit code 0 produces normal result with consoleOutput", async () => {
+    const onTestResult = jest.fn();
+    startWatching("test-problem", "JavaScript", "/fake", null, 0, null, {
+      onTestResult,
+    });
+
+    mockProc.emitStdout("Tests: 3 passed, 3 total\n");
+    mockProc.emit("close", 0, null);
+    await flush();
+
+    expect(onTestResult).toHaveBeenCalledWith(
+      expect.objectContaining({ passed: 3, total: 3, consoleOutput: [] })
+    );
+  });
+
+  test("exit code 1 produces normal failure result with consoleOutput", async () => {
+    const onTestResult = jest.fn();
+    startWatching("test-problem", "JavaScript", "/fake", null, 0, null, {
+      onTestResult,
+    });
+
+    mockProc.emitStdout("Tests: 1 failed, 2 passed, 3 total\n");
+    mockProc.emit("close", 1, null);
+    await flush();
+
+    expect(onTestResult).toHaveBeenCalledWith(
+      expect.objectContaining({ passed: 2, total: 3, consoleOutput: [] })
+    );
+  });
+
+  test("exit code 2 produces crashed result", async () => {
+    const onTestResult = jest.fn();
+    startWatching("test-problem", "JavaScript", "/fake", null, 0, null, {
+      onTestResult,
+    });
+
+    mockProc.emit("close", 2, null);
+    await flush();
+
+    expect(onTestResult).toHaveBeenCalledWith(
+      expect.objectContaining({ passed: 0, total: 0, crashed: true, exitCode: 2, consoleOutput: [] })
+    );
+  });
+
+  test("timeout fires after configured seconds and calls onTestResult with timedOut", async () => {
+    jest.useFakeTimers();
+    const onTestResult = jest.fn();
+    startWatching("test-problem", "JavaScript", "/fake", null, 0, null, {
+      onTestResult,
+    });
+
+    jest.advanceTimersByTime(5000);
+    expect(mockProc.kill).toHaveBeenCalledWith("SIGKILL");
+
+    mockProc.emit("close", null, "SIGKILL");
+    await jest.advanceTimersByTimeAsync(0);
+
+    expect(onTestResult).toHaveBeenCalledWith(
+      expect.objectContaining({ timedOut: true, timeoutSeconds: 5, consoleOutput: [] })
+    );
+
+    jest.useRealTimers();
+  });
+
+  test("timeout is cleared when process exits normally before timeout", async () => {
+    jest.useFakeTimers();
+    const onTestResult = jest.fn();
+    startWatching("test-problem", "JavaScript", "/fake", null, 0, null, {
+      onTestResult,
+    });
+
+    mockProc.emitStdout("Tests: 1 passed, 1 total\n");
+    mockProc.emit("close", 0, null);
+    await jest.advanceTimersByTimeAsync(0);
+
+    // Advance past timeout — kill should NOT fire
+    jest.advanceTimersByTime(10000);
+    expect(mockProc.kill).not.toHaveBeenCalled();
+
+    jest.useRealTimers();
+  });
+
+  test("timedOut in close handler skips normal result processing", async () => {
+    jest.useFakeTimers();
+    const onTestResult = jest.fn();
+    startWatching("test-problem", "JavaScript", "/fake", null, 0, null, {
+      onTestResult,
+    });
+
+    // Send normal output that would parse as passed tests
+    mockProc.emitStdout("Tests: 5 passed, 5 total\n");
+
+    // Fire timeout before close
+    jest.advanceTimersByTime(5000);
+    mockProc.emit("close", null, "SIGKILL");
+    await jest.advanceTimersByTimeAsync(0);
+
+    // Should get timeout result, not the parsed 5/5
+    expect(onTestResult).toHaveBeenCalledWith(
+      expect.objectContaining({ timedOut: true, passed: 0, total: 0 })
+    );
+
+    jest.useRealTimers();
+  });
+
+  test("unhandled error in file-change handler calls onError callback", async () => {
+    const onError = jest.fn();
+
+    // First spawn works (initial run), second spawn throws (triggered by file change)
+    let callCount = 0;
+    spawn.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) return mockProc;
+      throw new Error("spawn failed");
+    });
+
+    startWatching("test-problem", "JavaScript", "/fake", null, 0, null, {
+      onError,
+    });
+
+    // Complete the initial run so running=false
+    mockProc.emitStdout("Tests: 1 passed, 1 total\n");
+    mockProc.emit("close", 0, null);
+    await flush();
+
+    // Trigger file change — this calls run() again, which spawns and throws
+    const changeHandler = mockWatcherObj.on.mock.calls.find(([e]) => e === "change")[1];
+    changeHandler();
+    await flush();
+
+    expect(onError).toHaveBeenCalledWith(expect.any(Error));
+    expect(onError.mock.calls[0][0].message).toBe("spawn failed");
   });
 });

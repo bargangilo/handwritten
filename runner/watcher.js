@@ -5,6 +5,7 @@ import { getMilestoneWarning } from "./format.js";
 import {
   appendPartScaffold,
   buildTestFilter,
+  loadRunnerConfig,
   writeCompletionMarker,
 } from "./config.js";
 
@@ -32,7 +33,7 @@ function parsePytestOutput(stdout) {
   return { passed, total: passed + failed };
 }
 
-function runTests(problem, language, rootDir, testFilter) {
+function runTests(problem, language, rootDir, testFilter, runnerConfig) {
   return new Promise((resolve) => {
     let cmd, args, parser;
 
@@ -65,20 +66,65 @@ function runTests(problem, language, rootDir, testFilter) {
     });
 
     let output = "";
+    let timedOut = false;
+
     proc.stdout.on("data", (d) => (output += d.toString()));
     proc.stderr.on("data", (d) => (output += d.toString()));
 
-    proc.on("close", () => {
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      proc.kill("SIGKILL");
+    }, runnerConfig.testTimeoutSeconds * 1000);
+
+    proc.on("close", (code, signal) => {
+      clearTimeout(timeout);
+
+      if (timedOut) {
+        resolve({
+          passed: 0,
+          total: 0,
+          timedOut: true,
+          timeoutSeconds: runnerConfig.testTimeoutSeconds,
+          consoleOutput: [],
+        });
+        return;
+      }
+
+      if (signal) {
+        resolve({
+          passed: 0,
+          total: 0,
+          crashed: true,
+          exitCode: null,
+          signal,
+          consoleOutput: [],
+        });
+        return;
+      }
+
+      if (code >= 2) {
+        resolve({
+          passed: 0,
+          total: 0,
+          crashed: true,
+          exitCode: code,
+          consoleOutput: [],
+        });
+        return;
+      }
+
+      // Exit code 0 (all pass) or 1 (some fail) — parse results
       const result = parser(output);
       if (result) {
-        resolve(result);
+        resolve({ ...result, consoleOutput: [] });
       } else {
-        resolve({ passed: 0, total: 0 });
+        resolve({ passed: 0, total: 0, consoleOutput: [] });
       }
     });
 
     proc.on("error", () => {
-      resolve({ passed: 0, total: 0 });
+      clearTimeout(timeout);
+      resolve({ passed: 0, total: 0, consoleOutput: [] });
     });
   });
 }
@@ -94,14 +140,16 @@ function runTests(problem, language, rootDir, testFilter) {
  * @param {object|null} timerController
  * @param {object} callbacks - UI callbacks (all optional):
  *   onTestStart()
- *   onTestResult({ passed, total, timestamp, partInfo })
+ *   onTestResult({ passed, total, timestamp, partInfo, consoleOutput, timedOut?, timeoutSeconds?, crashed?, exitCode? })
  *   onPartAdvanced({ completedPart, nextTitle, nextDescription, splitSeconds })
  *   onAllComplete({ problem })
  *   onMilestone({ warning })
  *   onOvertime()
  *   onTimerTick({ timerDisplay, passed, total, timestamp, partInfo })
+ *   onError(err)
  */
 export function startWatching(problem, language, rootDir, config, startPart, timerController, callbacks = {}) {
+  const runnerConfig = loadRunnerConfig(rootDir);
   const ext = language === "JavaScript" ? "js" : "py";
   const filePath = path.join(rootDir, "workspace", problem, `main.${ext}`);
 
@@ -128,6 +176,14 @@ export function startWatching(problem, language, rootDir, config, startPart, tim
     }
   }
 
+  function handleError(err) {
+    if (callbacks.onError) {
+      callbacks.onError(err);
+    } else {
+      console.error("Watcher error:", err);
+    }
+  }
+
   // --- Legacy path (no config / single-part) ---
   if (!config) {
     let running = false;
@@ -135,15 +191,20 @@ export function startWatching(problem, language, rootDir, config, startPart, tim
     const run = async () => {
       if (running) return;
       running = true;
-      if (callbacks.onTestStart) callbacks.onTestStart();
-      const { passed, total } = await runTests(problem, language, rootDir, null);
-      lastPassed = passed;
-      lastTotal = total;
-      lastTimestamp = Date.now();
-      if (callbacks.onTestResult) {
-        callbacks.onTestResult({ passed, total, timestamp: lastTimestamp, partInfo: null });
+      try {
+        if (callbacks.onTestStart) callbacks.onTestStart();
+        const result = await runTests(problem, language, rootDir, null, runnerConfig);
+        lastPassed = result.passed;
+        lastTotal = result.total;
+        lastTimestamp = Date.now();
+        if (callbacks.onTestResult) {
+          callbacks.onTestResult({ ...result, timestamp: lastTimestamp, partInfo: null });
+        }
+      } catch (err) {
+        handleError(err);
+      } finally {
+        running = false;
       }
-      running = false;
     };
 
     // Register timer tick callback
@@ -195,61 +256,66 @@ export function startWatching(problem, language, rootDir, config, startPart, tim
     if (running) return;
     running = true;
 
-    let advancing = true;
-    while (advancing) {
-      advancing = false;
-      if (callbacks.onTestStart) callbacks.onTestStart();
+    try {
+      let advancing = true;
+      while (advancing) {
+        advancing = false;
+        if (callbacks.onTestStart) callbacks.onTestStart();
 
-      const testFilter = buildTestFilter(
-        config.parts[currentPart].activeTests,
-        language
-      );
-      const { passed, total } = await runTests(
-        problem,
-        language,
-        rootDir,
-        testFilter
-      );
-      lastPassed = passed;
-      lastTotal = total;
-      lastTimestamp = Date.now();
-      lastPartInfo = {
-        current: currentPart + 1,
-        unlocked: currentPart + 1,
-      };
-      if (callbacks.onTestResult) {
-        callbacks.onTestResult({ passed, total, timestamp: lastTimestamp, partInfo: lastPartInfo });
-      }
+        const testFilter = buildTestFilter(
+          config.parts[currentPart].activeTests,
+          language
+        );
+        const result = await runTests(
+          problem,
+          language,
+          rootDir,
+          testFilter,
+          runnerConfig
+        );
+        lastPassed = result.passed;
+        lastTotal = result.total;
+        lastTimestamp = Date.now();
+        lastPartInfo = {
+          current: currentPart + 1,
+          unlocked: currentPart + 1,
+        };
+        if (callbacks.onTestResult) {
+          callbacks.onTestResult({ ...result, timestamp: lastTimestamp, partInfo: lastPartInfo });
+        }
 
-      if (passed === total && total > 0) {
-        const nextPart = currentPart + 1;
-        if (nextPart >= config.parts.length) {
-          // All parts complete
-          ignoreNextChange = true;
-          writeCompletionMarker(problem, language, rootDir);
-          if (timerController) timerController.stop();
-          if (callbacks.onAllComplete) callbacks.onAllComplete({ problem });
-          _resolveCompletion();
-        } else {
-          // Advance to next part
-          ignoreNextChange = true;
-          appendPartScaffold(problem, language, config, nextPart, rootDir);
-          const splitSeconds = timerController ? timerController.splitPart() : null;
-          currentPart = nextPart;
-          if (callbacks.onPartAdvanced) {
-            callbacks.onPartAdvanced({
-              completedPart: currentPart, // 1-indexed (currentPart was just incremented)
-              nextTitle: config.parts[currentPart].title,
-              nextDescription: config.parts[currentPart].description,
-              splitSeconds,
-            });
+        if (result.passed === result.total && result.total > 0) {
+          const nextPart = currentPart + 1;
+          if (nextPart >= config.parts.length) {
+            // All parts complete
+            ignoreNextChange = true;
+            writeCompletionMarker(problem, language, rootDir);
+            if (timerController) timerController.stop();
+            if (callbacks.onAllComplete) callbacks.onAllComplete({ problem });
+            _resolveCompletion();
+          } else {
+            // Advance to next part
+            ignoreNextChange = true;
+            appendPartScaffold(problem, language, config, nextPart, rootDir);
+            const splitSeconds = timerController ? timerController.splitPart() : null;
+            currentPart = nextPart;
+            if (callbacks.onPartAdvanced) {
+              callbacks.onPartAdvanced({
+                completedPart: currentPart, // 1-indexed (currentPart was just incremented)
+                nextTitle: config.parts[currentPart].title,
+                nextDescription: config.parts[currentPart].description,
+                splitSeconds,
+              });
+            }
+            advancing = true; // re-run with new filter
           }
-          advancing = true; // re-run with new filter
         }
       }
+    } catch (err) {
+      handleError(err);
+    } finally {
+      running = false;
     }
-
-    running = false;
   };
 
   // Register timer tick callback

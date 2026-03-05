@@ -1,0 +1,4 @@
+{
+  "_comment": "Runtime configuration for the Handwritten CLI runner. Edit these values to adjust runner behavior. This file is committed — changes affect all users of this repo.",
+  "testTimeoutSeconds": 20
+}
