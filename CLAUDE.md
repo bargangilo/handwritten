@@ -102,6 +102,18 @@ When renaming anything — a file, a folder, a concept — grep all markdown fil
 
 If a feature is complex enough to affect the tool's mental model, it warrants a `docs/` file. Use the existing docs as calibration for what level of complexity earns its own file. New `docs/` files must be linked from the README on creation.
 
+### README Style and Presentation
+
+The README has an ASCII art title block at the top — preserve it when making other changes; do not replace it with plain text. Media placeholder blocks (HTML comments with `TODO` directions for screenshots/GIFs) are intentional stubs — do not remove them. If actual media files are added in the future, update the stubs to real image references.
+
+The project structure diagram shows top-level organization only, not a complete file inventory. When adding new directories, add them to the diagram with a one-line description. Do not add individual files unless they are genuinely notable at the repo level (e.g. `config.json`).
+
+Badges near the top reflect real, verifiable facts from `package.json` — only add new badges for things that are actually configured (node version, yarn version, module format). Do not add badges for CI, coverage, or other services that are not set up.
+
+Emoji section markers (`:computer:`, `:bar_chart:`, etc.) are used sparingly — maximum one per major Features subsection — as visual anchors for scanning. Do not add emoji throughout prose, to section headers outside Features, or as decoration.
+
+The agent skills system is mentioned in the opening description of the tool, not only in the dedicated Agent Skills section. When updating the opening paragraphs, ensure the agent skills mention is preserved as a natural part of describing what the tool is.
+
 ## Testing
 
 Runner unit tests live in `tests/runner/` and cover config loading, workspace management, UI output, watcher logic, timer math, and stats computation. Script tests live in `tests/scripts/` and cover the agent randomization utilities.
