@@ -47,7 +47,11 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 3. **Generate and present concept proposal.**
 
-   Write and present to the user:
+   Generate the full concept internally — working title, description, parts overview, difficulty object with justifications, and expected minutes — following all authoring rules. Then present the proposal based on whether Surprise Me mode is active.
+
+   **If `surpriseMode.enabled` is false:**
+
+   Present the full proposal to the user:
 
    a. **Working title** — must follow information hiding rules from `problem-authoring-guide.md` Section 1, Rule 1. Use domain language, no algorithm names, no data structure names, no structural signals.
 
@@ -60,6 +64,24 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
    e. **Expected minutes** — the value, with a brief note on how it relates to the difficulty.
 
    Present this proposal and ask: "Does this concept look good, or would you like any changes?" Wait for explicit approval. If the user requests changes, revise the proposal and present it again. Do not proceed to step 4 without approval.
+
+   **If `surpriseMode.enabled` is true:**
+
+   Keep the full proposal (title, parts, difficulty justifications) internal — do not show it to the user. Apply each reveal flag independently to determine what to include in the user-facing prompt:
+
+   - `revealTopicOnStart: false` → do not mention topics, concept domain, algorithm category, or data structures.
+   - `revealStyleOnStart: false` → do not mention whether the problem is LeetCode or real-world style.
+   - `revealPartCountOnStart: false` → do not mention how many parts the problem has, do not show a parts overview, do not number or describe individual parts.
+
+   When all three flags are false (the default), show only a confirmation prompt with no problem-specific information:
+
+   > "I have a problem ready. Shall I proceed with generation?"
+
+   When some flags are true, reveal only what those flags permit. For example, if `revealTopicOnStart` is true but the other two are false:
+
+   > "I have a problem ready involving hash maps and arrays. Shall I proceed?"
+
+   Wait for explicit user confirmation before proceeding. If the user requests changes (e.g. "pick a different topic"), revise internally and present a new prompt following the same reveal rules. Do not proceed to step 4 without approval.
 
 4. **Confirm language.**
 
@@ -124,15 +146,20 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 9. **Post-generation summary.**
 
-   Tell the user:
+   Always tell the user:
    - The problem title
    - The language(s) generated
    - The `expectedMinutes` value
-   - The overall difficulty rating
-   - If Surprise Me was used: now reveal topics and style (subject to `surpriseMode.reveal*` flags — only reveal what the flags permit)
    - "Run `yarn start` and select this problem to begin."
 
-   Do not mention part count or per-part details in the summary.
+   If `surpriseMode.enabled` is false, also include topics, style, and overall difficulty.
+
+   If `surpriseMode.enabled` is true, apply reveal flags:
+   - Only include topics if `revealTopicOnStart` is true.
+   - Only include style if `revealStyleOnStart` is true.
+   - Do not include overall difficulty or difficulty justifications.
+
+   Never mention part count or per-part details in the summary, regardless of config.
 
 ## Constraints
 
