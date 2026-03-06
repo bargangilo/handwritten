@@ -22,6 +22,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 
+process.stdout.write("\x1B[2J\x1B[H");
 const { waitUntilExit } = render(React.createElement(App, { rootDir: ROOT_DIR }));
 await waitUntilExit();
 process.exit(0);

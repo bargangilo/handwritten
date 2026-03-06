@@ -9,7 +9,7 @@ export default function ProblemSelect({ dispatch, problems }) {
       label: config.title + (statusBadge || ""),
       value: name,
     }));
-    items.push({ label: "← Back", value: "__back__" });
+    items.unshift({ label: "← Back", value: "__back__" });
     return items;
   }, [problems]);
 
@@ -19,9 +19,11 @@ export default function ProblemSelect({ dispatch, problems }) {
 
   return (
     <>
-      <Text>{"  "}Select a problem:</Text>
+      <Text>{"  "}Select a problem:{options.length > 10 ? <Text dimColor> (scroll for more)</Text> : ""}</Text>
       <Select
         options={options}
+        defaultValue={options[1]?.value}
+        visibleOptionCount={10}
         onChange={(value) => {
           if (value === "__back__") {
             dispatch({ type: Action.BACK });
