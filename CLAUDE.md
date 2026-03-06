@@ -182,6 +182,19 @@ See [docs/problem-schema.md](docs/problem-schema.md) for the full schema referen
 - The `workspace/` folder is committed (via `.gitkeep`) but contents are gitignored
 - Problem test suites are co-located with problems in `problems/<name>/`
 
+## Workspace Directory (`workspace/`)
+
+The `workspace/` directory is user data, not a scratch pad. It contains the files users actively write solutions in during practice sessions. Do not create, modify, or delete anything in `workspace/` unless a task explicitly requires it.
+
+Specifically:
+
+- **Never use `workspace/` for temporary files, test fixtures, or scratch code.** Use `/tmp/` or a clearly named directory under `.agents/.draft/` for any ephemeral files needed during a task.
+- **Never delete files from `workspace/` as part of cleanup.** A file that exists in `workspace/` was either put there by the user or by the CLI session system — both are intentional.
+- **Skills that are permitted to touch `workspace/`:** `handwritten-generate` (writes the initial scaffold when starting a session), `handwritten-review` (reads the user's solution), `handwritten-hint` (reads the user's solution). No other skill should read or write `workspace/`.
+- **When developing or testing runner features** that require a realistic workspace state, use the fixtures in `media/fixtures/workspace/` instead of the live `workspace/` directory.
+
+If a task genuinely requires modifying `workspace/` and is not one of the permitted skills above, stop and confirm with the user before proceeding.
+
 ## Agent Skills System
 
 The `.agents/` directory contains skill files, scripts, templates, and context documents for AI agent use. The CLI has zero dependency on the agent skills system — it does not require an API key and does not invoke any agent at runtime.
