@@ -407,6 +407,8 @@ problems/<name>/
 
 The `parts` array in `problem.json` defines each part's title, description, `activeTests` (test names to run), and `scaffold` (starter code). Test names use spaces in `activeTests`; Jest matches them directly, and pytest function names mirror them with underscores prefixed by `test_`. Test files import from `../../workspace/<name>/main`, not from `problems/`.
 
+The `main.js` and `main.py` stub files must exist in the problem directory for the CLI to detect available languages. Their content should match `parts[0].scaffold.js` and `parts[0].scaffold.python` respectively. When generating problems through the `hideWriteOutput` code path, the write script (`.agents/scripts/write-problem.js`) auto-extracts these stubs from `problem.json` after writing the payload files.
+
 ### Pre-Commit Checklist
 
 Before committing a new problem, verify every item:

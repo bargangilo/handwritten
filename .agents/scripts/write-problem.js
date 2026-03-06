@@ -53,6 +53,32 @@ try {
     fs.writeFileSync(fullPath, content, "utf8");
   }
 
+  // Extract scaffold stub files from problem.json
+  const problemJsonFile = resolvedFiles.find((f) => f.fullPath.endsWith("problem.json"));
+  if (problemJsonFile) {
+    try {
+      const problemConfig = JSON.parse(problemJsonFile.content);
+      const problemDir = path.dirname(problemJsonFile.fullPath);
+      if (Array.isArray(problemConfig.parts) && problemConfig.parts.length > 0) {
+        const scaffold = problemConfig.parts[0].scaffold;
+        if (scaffold) {
+          if (typeof scaffold.js === "string") {
+            const stubPath = path.join(problemDir, "main.js");
+            fs.writeFileSync(stubPath, scaffold.js, "utf8");
+            resolvedFiles.push({ fullPath: stubPath });
+          }
+          if (typeof scaffold.python === "string") {
+            const stubPath = path.join(problemDir, "main.py");
+            fs.writeFileSync(stubPath, scaffold.python, "utf8");
+            resolvedFiles.push({ fullPath: stubPath });
+          }
+        }
+      }
+    } catch {
+      // problem.json content is not valid JSON — skip scaffold extraction
+    }
+  }
+
   // Clean up draft
   fs.unlinkSync(PENDING_FILE);
   try {

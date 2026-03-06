@@ -7,7 +7,7 @@ description: Generates a complete interview problem with test suites, user-appro
 
 ## What This Skill Does
 
-Generates a complete interview problem — `problem.json`, `suite.test.js`, and optionally `suite.test.py` — and writes it to `problems/`. The process has two phases: a concept proposal that requires user approval, then full file generation with a mandatory quality gate. The generated problem is immediately available in the CLI.
+Generates a complete interview problem — `problem.json`, `main.js`, `main.py`, `suite.test.js`, and optionally `suite.test.py` — and writes it to `problems/`. The process has two phases: a concept proposal that requires user approval, then full file generation with a mandatory quality gate. The generated problem is immediately available in the CLI.
 
 ## Before You Begin
 
@@ -250,11 +250,15 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
        {
          "relativePath": "problems/<name>/suite.test.js",
          "content": "<complete file content as string>"
+       },
+       {
+         "relativePath": "problems/<name>/main.js",
+         "content": "<Part 1 JS scaffold content>"
        }
      ]
    }
    ```
-   Include only the files being generated (omit `suite.test.py` if Python was not selected).
+   Include `main.js` with Part 1's JS scaffold content, and `main.py` with Part 1's Python scaffold content if Python was selected. Include `suite.test.py` only if Python was selected. The write script also auto-extracts scaffolds from `problem.json` as a safety net, but explicitly including the stub files ensures they are always present.
 
    b. Create the `.agents/.draft/` directory if it does not exist.
 
@@ -288,6 +292,10 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
    Do not mention topics, style, part count, difficulty ratings, or any structural information about the problem. Do not mention that details are being hidden.
 
+10. **Verify stub files exist.**
+
+    After all files are written (regardless of write path), verify that `problems/<name>/main.js` exists (and `main.py` if Python was selected). These stub files are required for the CLI to detect available languages. If either is missing, extract the content from `parts[0].scaffold.js` or `parts[0].scaffold.python` in the written `problem.json` and write the missing file(s) directly.
+
 ## Constraints
 
 1. Never write files until the self-check checklist in step 7 passes completely. Every item must be verified.
@@ -304,5 +312,5 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 ## Output
 
-- Files written to `problems/<name>/`: `problem.json`, and optionally `suite.test.js` and `suite.test.py`.
+- Files written to `problems/<name>/`: `problem.json`, `main.js`, and optionally `main.py`, `suite.test.js`, and `suite.test.py`.
 - Post-generation summary shown to the user.
