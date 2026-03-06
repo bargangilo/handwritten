@@ -122,6 +122,8 @@ The skill generates `runInputs` for each part alongside the test suite. These ar
 
 If Surprise Me mode is enabled in your config, the skill uses randomized parameters (topics, style, difficulty, part count) so you do not know what to expect. The randomization seed is logged so you can reproduce a generation with the same parameters.
 
+The skill generates test suites against a mandatory coverage standard: at least 8 tests per non-trivial part, mandatory coverage of output contract, one-to-many relationships, interval boundary cases, mixed null results, and scale. An adversarial review step verifies that plausible wrong implementations are caught before the suite is finalized. Problems with interval overlap, one-to-many data relationships, or fixed-length output arrays are flagged at the concept proposal stage so expanded coverage requirements are applied from the start.
+
 The generated problem is immediately available in the CLI — run `yarn start` and select it from the problem list.
 
 ### `/handwritten-review`

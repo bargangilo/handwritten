@@ -24,6 +24,18 @@ describe("flattenArray", () => {
       1, 2, 3, 4, 5, 6,
     ]);
   });
+
+  test("single element array", () => {
+    expect(mod.flattenArray([42])).toEqual([42]);
+  });
+
+  test("empty sub-arrays mixed with values", () => {
+    expect(mod.flattenArray([[], 1, [[], 2], []])).toEqual([1, 2]);
+  });
+
+  test("preserves element order across nesting levels", () => {
+    expect(mod.flattenArray([[3, 1], [4], [[1, 5]]])).toEqual([3, 1, 4, 1, 5]);
+  });
 });
 
 // ---- Part 2: sumNested ----
@@ -50,5 +62,17 @@ describe("sumNested", () => {
     expect(
       mod.sumNested([1, [2, [3, [4, [5, [6, [7, [8, [9, [10]]]]]]]]]])
     ).toBe(55);
+  });
+
+  test("negative numbers sum correctly", () => {
+    expect(mod.sumNested([-1, [2, [-3]], 4])).toBe(2);
+  });
+
+  test("nested empty sub-arrays sum to zero", () => {
+    expect(mod.sumNested([[], [[]], [[[]]]])).toBe(0);
+  });
+
+  test("single flat number", () => {
+    expect(mod.sumNested([7])).toBe(7);
   });
 });

@@ -80,6 +80,22 @@ describe("formatTimerSegment", () => {
     expect(result).toContain("[paused]");
   });
 
+  test("returns null for disabled mode", () => {
+    const result = formatTimerSegment({
+      totalElapsedSeconds: 100,
+      currentPartElapsedSeconds: 100,
+      remaining: null,
+      isOvertime: false,
+      isPaused: false,
+      mode: "disabled",
+    });
+    expect(result).toBeNull();
+  });
+
+  test("returns null for null input", () => {
+    expect(formatTimerSegment(null)).toBeNull();
+  });
+
   test("shows overtime in countdown mode", () => {
     const result = stripAnsi(formatTimerSegment({
       totalElapsedSeconds: 1600,

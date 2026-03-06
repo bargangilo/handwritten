@@ -15,14 +15,19 @@
   "parts": [
     {
       "title": "Find best seat for each budget",
-      "description": "A venue sells seats at various price points. Implement findBestSeats(prices, budgets) that takes an unsorted array of available seat prices and an array of customer budgets. For each budget, return the price of the most expensive seat the customer can afford (price <= budget), or -1 if no seat is within budget. Return the results as an array in the same order as the budgets.",
+      "description": "A venue sells seats at various price points. Implement findBestSeats(prices, budgets) / find_best_seats(prices, budgets) that takes an unsorted array of available seat prices and an array of customer budgets. For each budget, return the price of the most expensive seat the customer can afford (price <= budget), or -1 if no seat is within budget. Return the results as an array with the same length as the budgets array, in the same order, with -1 at any index where no seat is affordable.",
       "activeTests": [
         "finds best seat for each budget",
         "returns negative one when no seat is affordable",
         "exact budget match returns that price",
         "returns most expensive when all are affordable",
         "empty price list returns all negative ones",
-        "handles many seats and budgets"
+        "handles many seats and budgets",
+        "output array length matches budgets array length",
+        "single budget with single price within budget",
+        "duplicate prices returns highest affordable price",
+        "selects most expensive affordable not first affordable",
+        "budget of zero with all positive prices returns negative one"
       ],
       "scaffold": {
         "js": "/**\n * Find the best affordable seat for each customer budget.\n *\n * @param {number[]} prices - Available seat prices (unsorted)\n * @param {number[]} budgets - Customer budgets to check\n * @returns {number[]} For each budget, the highest price <= budget, or -1 if none\n */\nfunction findBestSeats(prices, budgets) {\n  // TODO: implement\n}\n\nmodule.exports = { findBestSeats };\n",

@@ -274,6 +274,60 @@ describe("stop", () => {
   });
 });
 
+describe("disabled mode", () => {
+  test("start does not call setInterval", () => {
+    const timer = createTimer({ mode: "disabled" });
+    const ticks = [];
+    timer.onTick((state) => ticks.push(state));
+    timer.start();
+    jest.advanceTimersByTime(5000);
+    expect(ticks).toHaveLength(0);
+  });
+
+  test("getState returns elapsed time from wall clock after start", () => {
+    const timer = createTimer({ mode: "disabled" });
+    timer.start();
+    jest.advanceTimersByTime(10000);
+    const state = timer.getState();
+    expect(state.totalElapsedSeconds).toBe(10);
+    expect(state.mode).toBe("disabled");
+  });
+
+  test("stop does not throw and clears start reference", () => {
+    const timer = createTimer({ mode: "disabled" });
+    timer.start();
+    jest.advanceTimersByTime(3000);
+    expect(() => timer.stop()).not.toThrow();
+    expect(timer.getState().totalElapsedSeconds).toBe(3);
+  });
+
+  test("isDisabled returns true", () => {
+    const timer = createTimer({ mode: "disabled" });
+    expect(timer.isDisabled()).toBe(true);
+  });
+
+  test("no tick callbacks fire after start", () => {
+    const timer = createTimer({ mode: "disabled" });
+    const ticks = [];
+    timer.onTick((state) => ticks.push(state));
+    timer.start();
+    jest.advanceTimersByTime(60000);
+    expect(ticks).toHaveLength(0);
+  });
+});
+
+describe("isDisabled", () => {
+  test("returns false for stopwatch mode", () => {
+    const timer = createTimer({ mode: "stopwatch" });
+    expect(timer.isDisabled()).toBe(false);
+  });
+
+  test("returns false for countdown mode", () => {
+    const timer = createTimer({ mode: "countdown", countdownSeconds: 1920 });
+    expect(timer.isDisabled()).toBe(false);
+  });
+});
+
 describe("multiple tick listeners", () => {
   test("onTick supports multiple callbacks", () => {
     const timer = createTimer({ mode: "stopwatch" });

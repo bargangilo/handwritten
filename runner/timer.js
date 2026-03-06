@@ -143,7 +143,9 @@ export function createTimer(options = {}) {
     partStartMs = restoredPartElapsedMs > 0
       ? restoredElapsedMs - restoredPartElapsedMs
       : 0;
-    intervalId = setInterval(tick, 1000);
+    if (mode !== "disabled") {
+      intervalId = setInterval(tick, 1000);
+    }
   }
 
   function pause() {
@@ -199,6 +201,10 @@ export function createTimer(options = {}) {
     return paused;
   }
 
+  function isDisabledFn() {
+    return mode === "disabled";
+  }
+
   return {
     start,
     pause,
@@ -210,5 +216,6 @@ export function createTimer(options = {}) {
     getState,
     getDisplayState,
     isPaused: isPausedFn,
+    isDisabled: isDisabledFn,
   };
 }

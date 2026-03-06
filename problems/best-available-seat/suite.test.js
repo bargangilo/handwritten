@@ -36,4 +36,36 @@ describe("findBestSeats", () => {
     const budgets = [5000, 9999, 1, 10000, 0];
     expect(mod.findBestSeats(prices, budgets)).toEqual([5000, 9999, 1, 10000, -1]);
   });
+
+  test("output array length matches budgets array length", () => {
+    const prices = [20, 40, 60];
+    const budgets = [10, 50, 30, 70];
+    const result = mod.findBestSeats(prices, budgets);
+    expect(result).toHaveLength(4);
+    expect(result).toEqual([-1, 40, 20, 60]);
+  });
+
+  test("single budget with single price within budget", () => {
+    const prices = [25];
+    const budgets = [30];
+    expect(mod.findBestSeats(prices, budgets)).toEqual([25]);
+  });
+
+  test("duplicate prices returns highest affordable price", () => {
+    const prices = [30, 30, 50, 50];
+    const budgets = [35, 55];
+    expect(mod.findBestSeats(prices, budgets)).toEqual([30, 50]);
+  });
+
+  test("selects most expensive affordable not first affordable", () => {
+    const prices = [10, 90, 50, 30, 70];
+    const budgets = [60];
+    expect(mod.findBestSeats(prices, budgets)).toEqual([50]);
+  });
+
+  test("budget of zero with all positive prices returns negative one", () => {
+    const prices = [1, 5, 10];
+    const budgets = [0];
+    expect(mod.findBestSeats(prices, budgets)).toEqual([-1]);
+  });
 });

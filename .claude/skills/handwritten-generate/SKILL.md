@@ -80,7 +80,18 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 3. **Generate and present concept proposal.**
 
-   Generate the full concept internally — working title, description, parts overview, difficulty object with justifications, and expected minutes — following all authoring rules. Then present the proposal based on the `hideProblemDetails` config.
+   Generate the full concept internally — working title, description, parts overview, difficulty object with justifications, and expected minutes — following all authoring rules.
+
+   **After drafting the concept, check whether the proposed problem involves any of the following and flag it explicitly in the proposal:**
+
+   - Interval, time window, or range overlap
+   - A one-to-many data relationship
+   - A function returning a fixed-length output array
+   - Multiple independent constraints that must all be satisfied simultaneously
+
+   For each flag present, note in the proposal: "This problem requires expanded test coverage for [flagged category] per the Test Generation Standards." This ensures the expanded coverage requirements are visible before generation begins, not discovered during the self-check.
+
+   Then present the proposal based on the `hideProblemDetails` config.
 
    **If `hideProblemDetails.enabled` is false:**
 
@@ -125,7 +136,12 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
    - `generatedAt` — current ISO 8601 timestamp. Use the actual current time, not a placeholder.
    - `parts` — each part with `title`, `description`, `activeTests`, and `scaffold` (js and/or python). Follow all authoring rules:
      - Titles: Rule 3 (what to build, not how).
-     - Descriptions: Rule 4 (input/output, not mechanism).
+     - Descriptions: Rule 4 (input/output, not mechanism). Before finalizing any part description, verify all of the following are explicitly stated in plain language within the description:
+       - **One-to-many relationships:** If any input collection can contain multiple entries relating to the same entity, state it directly. Do not rely on the data structure to imply it. The exact wording must be explicit: "a single [entity] may appear more than once in the [collection] array."
+       - **Output length contract:** If the function returns an array with one element per input element, state: "Return the results as an array with the same length as [input], in the same order, with null at any index where [condition]." Do not use "in the same order" without also stating the length invariance.
+       - **Conflict and boundary definitions:** Any binary relationship (overlap, conflict, adjacency, containment) must be defined with a precise inequality, not prose alone. Write the definition in words, then follow it with the mathematical form: "`a.start < b.end && b.start < a.end`."
+       - **Null and sentinel semantics:** State explicitly when null or a sentinel is returned, what it means, and that it appears at the specific index for that input rather than collapsing the output.
+       If any of these applies to the part and is not in the description, add it before proceeding.
      - activeTests: Section 3 rules (accumulation, exact matching).
      - Scaffolds: Rule 6 and Section 4 (no hints, additive exports for Part 2+).
      - `runInputs` — for each part, generate 2-3 representative function calls with expected return values. This is an explicit substep — do not skip it:
@@ -140,17 +156,37 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
 
 6. **Generate test suite(s).**
 
-   For each selected language, write a complete suite file following `problem-authoring-guide.md` Section 5:
+   The test suite is the most important artifact this skill produces. A correct solution to a well-described problem should not be possible to write without passing the tests. A plausible wrong implementation should fail at least one test. These are not aspirational — they are requirements.
+
+   **Before writing a single test**, perform this sequence:
+
+   a. Read the Test Generation Standards section (Section 6) in `.agents/context/problem-authoring-guide.md` completely.
+
+   b. Identify which mandatory coverage categories apply to this problem. For each part, explicitly list the applicable categories: output contract, one-to-many relationships, interval overlaps, mixed null results, etc. Write this list out — it becomes the test plan.
+
+   c. Identify the plausible wrong implementations for this part. Write each one in one sentence. These are the failure modes the test suite must catch. There should be at least two per part for any non-trivial problem.
+
+   d. Write tests from the test plan first — at least one test per coverage category. Then add additional tests until each plausible wrong implementation is caught by at least one test.
+
+   e. Perform the adversarial check: for each plausible wrong implementation, trace through every test and confirm at least one produces a wrong result. If any plausible wrong implementation passes all tests, add tests until it does not.
+
+   f. Count the tests. If the count is below 8 for any non-trivial part, the suite is not complete. Continue adding tests covering additional structural scenarios until the count reaches at least 8. Do not add overlapping tests — each additional test must cover a scenario not already covered.
+
+   **During test writing**, apply these requirements:
+
    - All tests for all parts in a single file (`suite.test.js` and/or `suite.test.py`).
    - Jest file imports from `../../workspace/<name>/main`.
    - pytest file uses `sys.path.insert` at module level and function-local imports in every test function.
-   - Test names describe observable behavior, not implementation (Rule 5).
-   - Minimum coverage per part: one basic case, one empty/null/boundary input, two edge cases, one performance-adjacent case.
+   - Every test must assert a specific expected value — no `toBeTruthy`, no `toBeDefined` alone as the sole assertion for meaningful output.
+   - Output contract tests must use `toHaveLength` or equivalent to verify collection size separately from value checks.
+   - Scale tests must assert a specific value at a specific index, not just that the function returns without crashing.
+   - Adjacent boundary tests must exist for any boundary defined in the problem.
+   - Test names must follow the naming standard from the authoring guide — behavioral descriptions, no output revelation (Rule 5).
    - Every test name in the suite file must exactly match the corresponding string in `problem.json activeTests` — character for character.
 
 7. **Run the self-check checklist.**
 
-   This step is mandatory and cannot be abbreviated, skipped, or summarized. Go through every item in `problem-authoring-guide.md` Section 7 and verify the answer:
+   This step is mandatory and cannot be abbreviated, skipped, or summarized. Go through every item in `problem-authoring-guide.md` Section 8 and verify the answer:
 
    1. Does the title contain any algorithm or data structure names? **Must be No.**
    2. Does the title or description reveal the number of parts? **Must be No.**
@@ -174,6 +210,16 @@ Generates a complete interview problem — `problem.json`, `suite.test.js`, and 
    20. Is the run inputs count 2-3 per part? **Must be Yes.**
    21. Does every generated `runInputs` entry include an `expected` field? **Must be Yes.**
    22. For "both" language config: does each scenario have matching JS and Python entries with correct naming conventions? **Must be Yes if applicable.**
+   23. Does every part have at least 8 tests? **Must be Yes — if No, add tests before proceeding.**
+   24. Are there at least 2 structurally distinct happy path tests per part? **Must be Yes.**
+   25. Is there a test verifying output length/shape for any collection-returning function? **Must be Yes if applicable.**
+   26. Is there a mixed-result test where some inputs succeed and some return null? **Must be Yes if applicable.**
+   27. Is there a test exercising the many side of every one-to-many relationship? **Must be Yes if applicable — if No, this is a critical gap, add the test immediately.**
+   28. Do interval problems cover all four overlap boundary cases? **Must be Yes if applicable.**
+   29. Has the adversarial check been completed and documented in this generation session? **Must be Yes.**
+   30. Did the adversarial check find any uncaught plausible wrong implementation? **Must be No — if Yes, add tests and recheck.**
+   31. Does every test name describe a distinct behavioral scenario? **Must be Yes.**
+   32. Does the description explicitly state all one-to-many relationships, output length contracts, boundary definitions, and null semantics that apply? **Must be Yes.**
 
    If any item fails, revise the relevant file(s) and re-check the failing item(s). Do not write files until every item passes.
 

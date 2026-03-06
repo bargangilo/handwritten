@@ -6,7 +6,7 @@ Everything you need to go from cloning the repo to completing your first practic
 
 | Requirement | Verify | Notes |
 |---|---|---|
-| **Node.js** (>=18) | `node --version` | Required for the CLI and Jest |
+| **Node.js** (>=18) | `node --version` | Required for the CLI and Jest. Tested through Node 22; Node 23+ may work but is not tested |
 | **Corepack** | `corepack --version` | Ships with Node 18+. Run `corepack enable` once to activate Yarn 4 |
 | **Yarn 4** | `yarn --version` | Managed via Corepack — do not install globally. The repo pins `yarn@4.13.0` in `package.json` |
 | **Python 3** | `python3 --version` | Required only for Python problems |
@@ -112,6 +112,8 @@ Press **Q** at any time to save your session and return to the main menu. Press 
 
 When you come back, select the same problem and choose **Resume where you left off**. The CLI restores your file, timer state, and current part. No time is counted while the CLI is not running.
 
+When resuming a completed problem, the timer resets to zero — your previous completion is preserved in your attempt history. If you want to review the solution without timer pressure, enter `0` at the timer prompt to disable the timer for that session.
+
 ### 8. Review Your Stats
 
 From the main menu, select **Stats** to see aggregate practice statistics: total time, problems attempted and completed, average and best solve times, and your current streak (consecutive days with at least one attempt). Select a specific problem to see per-problem details including attempt history and per-part split times.
@@ -128,7 +130,7 @@ From the main menu, select **Stats** to see aggregate practice statistics: total
 
 **Malformed `session.json`.** If a session file becomes corrupted, the CLI logs a warning and treats the problem as having no session data. Delete the file (or use "Clear a Problem") to reset.
 
-**Node version issues.** The CLI requires Node 18 or later. Yarn 4 with Plug'n'Play requires Corepack, which ships with Node 18+. Run `corepack enable` if Yarn is not recognized.
+**Node version issues.** The CLI requires Node 18 or later and is tested through Node 22. Node 23+ may work but is untested — if you encounter unexpected crashes on a newer Node version, try switching to Node 22 via your version manager. Yarn 4 with Plug'n'Play requires Corepack, which ships with Node 18+. Run `corepack enable` if Yarn is not recognized.
 
 **Settings menu shows "Config schema not found".** The file `.agents/config-schema.json` is missing or has been moved. This file drives the settings menu at runtime. If it was accidentally deleted, restore it from git: `git checkout -- .agents/config-schema.json`.
 

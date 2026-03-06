@@ -142,6 +142,7 @@ export default function App({ rootDir }) {
         <CountdownPrompt
           dispatch={enrichedDispatch}
           expectedMinutes={state.problemConfig?.expectedMinutes || null}
+          isCompletedResume={!!state.resumeData?.completed}
         />
       );
 
@@ -165,6 +166,7 @@ export default function App({ rootDir }) {
           config={state.problemConfig}
           language={state.selectedLanguage}
           countdownSeconds={state.countdownSeconds}
+          timerMode={state.timerMode}
           startPart={state.startPart}
           resumeData={state.resumeData}
           runOutput={state.runOutput}

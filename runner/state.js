@@ -74,6 +74,7 @@ export const initialState = {
   availableLanguages: null,
   selectedLanguage: null,
   countdownSeconds: null,
+  timerMode: null,
   startPart: 0,
   resumeData: null,
   // Problem list / stats / clear context
@@ -153,6 +154,7 @@ export function reducer(state, action) {
         ...state,
         screen: Screen.SESSION_ACTIVE,
         countdownSeconds: action.countdownSeconds,
+        timerMode: action.timerMode || null,
       };
     case Action.SESSION_END:
       return {

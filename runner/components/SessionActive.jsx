@@ -78,6 +78,7 @@ export default function SessionActive({
   config,
   language,
   countdownSeconds,
+  timerMode,
   startPart,
   resumeData,
   runOutput,
@@ -120,15 +121,18 @@ export default function SessionActive({
 
     // Create timer
     const timerOptions = {
-      mode: countdownSeconds ? "countdown" : "stopwatch",
-      countdownSeconds,
+      mode: timerMode === "disabled" ? "disabled" : countdownSeconds ? "countdown" : "stopwatch",
+      countdownSeconds: timerMode === "disabled" ? null : countdownSeconds,
       totalElapsedSeconds: 0,
       currentPartElapsedSeconds: 0,
       totalPausedSeconds: 0,
     };
 
     // Restore timer state on resume
-    if (resumeData) {
+    // Completed sessions resume with a fresh timer — the old elapsed time
+    // reflects a finished attempt and is not meaningful for a new attempt.
+    // Historical attempts are preserved in session.attempts.
+    if (resumeData && !resumeData.completed) {
       timerOptions.totalElapsedSeconds = resumeData.totalElapsedSeconds || 0;
       timerOptions.currentPartElapsedSeconds = resumeData.currentPartElapsedSeconds || 0;
       timerOptions.totalPausedSeconds = resumeData.totalPausedSeconds || 0;
@@ -140,21 +144,42 @@ export default function SessionActive({
     timerRef.current = timer;
 
     // Build session data
-    let sessionData = resumeData ? { ...resumeData } : {
-      lastStarted: new Date().toISOString(),
-      totalElapsedSeconds: 0,
-      currentPartElapsedSeconds: 0,
-      isPaused: false,
-      pausedAt: null,
-      totalPausedSeconds: 0,
-      mode: timerOptions.mode,
-      countdownSeconds: timerOptions.countdownSeconds,
-      completed: false,
-      currentPart: startPart,
-      splits: [],
-      attempts: [],
-    };
-    sessionData.lastStarted = new Date().toISOString();
+    let sessionData;
+    if (resumeData && resumeData.completed) {
+      // Completed resume: fresh timer state, preserve attempt history
+      sessionData = {
+        lastStarted: new Date().toISOString(),
+        totalElapsedSeconds: 0,
+        currentPartElapsedSeconds: 0,
+        isPaused: false,
+        pausedAt: null,
+        totalPausedSeconds: 0,
+        mode: timerOptions.mode,
+        countdownSeconds: timerOptions.countdownSeconds,
+        completed: false,
+        currentPart: startPart,
+        splits: [],
+        attempts: resumeData.attempts || [],
+      };
+    } else if (resumeData) {
+      sessionData = { ...resumeData };
+      sessionData.lastStarted = new Date().toISOString();
+    } else {
+      sessionData = {
+        lastStarted: new Date().toISOString(),
+        totalElapsedSeconds: 0,
+        currentPartElapsedSeconds: 0,
+        isPaused: false,
+        pausedAt: null,
+        totalPausedSeconds: 0,
+        mode: timerOptions.mode,
+        countdownSeconds: timerOptions.countdownSeconds,
+        completed: false,
+        currentPart: startPart,
+        splits: [],
+        attempts: [],
+      };
+    }
     sessionRef.current = sessionData;
 
     // Register session persistence on each timer tick
@@ -330,7 +355,7 @@ export default function SessionActive({
       endSession(false);
     } else if (input === "p" || input === "P") {
       const timer = timerRef.current;
-      if (timer) {
+      if (timer && !timer.isDisabled()) {
         if (timer.isPaused()) {
           timer.resume();
         } else {
@@ -350,7 +375,7 @@ export default function SessionActive({
   return (
     <>
       <Text color="cyan">{"\n  "}Watching {problem} ({language})</Text>
-      <Text dimColor>{"  "}Save to run ({"\u2318"}S / Ctrl+S)  {"·"}  T test  {"·"}  P pause  {"·"}  Q quit  {"·"}  L logs{"\n"}</Text>
+      <Text dimColor>{"  "}Save to run ({"\u2318"}S / Ctrl+S)  {"·"}  T test  {timerMode !== "disabled" ? "·  P pause  " : ""}{"·"}  Q quit  {"·"}  L logs{"\n"}</Text>
 
       <Static items={messages}>
         {(msg) => {

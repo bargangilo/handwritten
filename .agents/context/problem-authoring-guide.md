@@ -255,7 +255,97 @@ Each entry specifies a `language` field. For both-language problems, provide mat
 
 ---
 
-## Section 6: Test Authoring Rules
+## Section 6: Test Generation Standards
+
+This section is the authoritative reference for what constitutes an adequate test suite for any Handwritten problem. The generation skill reads this section before writing tests. Every rule applies regardless of the domain, data structures, or algorithm involved.
+
+### Principle 1: Test Count
+
+More tests are always better than fewer, subject to one constraint: every test must cover a meaningfully distinct scenario. The minimum acceptable test count is 8 per part. There is no maximum. When in doubt, add the test.
+
+A test is meaningfully distinct if it exercises a different code path, a different boundary condition, or a different combination of input properties than any other test. Tests that differ only in the specific values used — same structure, same expected behavior, just different numbers — are overlapping and should be consolidated or replaced with a structurally different case.
+
+Aim for 8-12 tests per part as a baseline. Complex parts with multiple structural edge cases should have 12-16. A suite with fewer than 8 tests for a non-trivial part is almost certainly undertested and must be expanded before the self-check can pass.
+
+### Principle 2: Mandatory Coverage Categories
+
+Every test suite must include tests from each of the following categories that apply to the problem. The self-check must verify each applicable category is covered.
+
+**Happy path — minimum two tests.** At least two tests where the function behaves correctly on typical, representative input. These tests should differ structurally — different input sizes, different configurations, different combinations of features — not just different values.
+
+**Output contract.** If the function returns a collection (array, list, map), at least one test must verify that the output collection has the correct shape independent of the values inside it. For array-returning functions: verify the output length equals the expected length. For functions that return one output element per input element: verify the mapping is positional. For functions that can return null or a sentinel at specific positions: verify the mixed case where some positions succeed and others return the sentinel — not just the all-succeed or all-fail cases.
+
+**Empty and minimal input.** At least one test with the smallest possible meaningful input — empty collection, single element, single item in each collection. At least one test where the empty case produces a specific output (not just "no crash").
+
+**One-to-many relationships.** If the problem's data model includes any relationship where one entity can be associated with multiple instances of another — one user with many orders, one room with many bookings, one node with many edges — at least one test must exercise the many side with two or more associated items. A test suite that only ever associates one item to one item does not adequately test problems with one-to-many structure.
+
+**Boundary and off-by-one.** At least one test that exercises the exact boundary of any constraint in the problem. If a capacity threshold is involved, test exactly at the threshold. If a time window is involved, test exactly at the start and end. If a count limit is involved, test exactly at the limit and one above.
+
+**Ordering sensitivity.** If the output depends on a specific ordering of input processing, or if the input order could affect correctness, at least one test must verify the result is independent of input ordering — or, if ordering matters, that it matters correctly.
+
+**Scale.** At least one test with input meaningfully larger than the others — not astronomically large, but large enough that an O(n²) solution would produce a visibly different result than an O(n) solution on the other tests. This is not a performance test — it is a correctness test that happens to use larger input. The assertion is still a concrete expected value.
+
+**Null and no-result cases.** If the function can return null, None, -1, or any sentinel value indicating absence, at least one test must exercise the case where the answer is genuinely absent. At least one test must exercise the mixed case: some inputs have results, some do not.
+
+### Principle 3: Interval and Range Problems
+
+Any problem whose core mechanic involves time windows, date ranges, numeric intervals, or spatial regions must cover all four boundary relationships between two intervals. These four cases are the minimum — a correct interval implementation must handle all of them:
+
+- **Partial overlap from the left:** interval A starts before interval B and ends inside B
+- **Partial overlap from the right:** interval A starts inside interval B and ends after B
+- **Full containment:** interval A is entirely contained within interval B
+- **Full envelopment:** interval A entirely contains interval B
+
+Additionally: adjacent intervals (one ends exactly where the other begins) must be tested and the problem description must state explicitly whether adjacency counts as overlap.
+
+A test suite for an interval problem that does not cover all four cases is incomplete regardless of how many other tests it has.
+
+### Principle 4: The Adversarial Implementation Check
+
+After writing the test suite, perform the following check before the suite is considered final. This check is mandatory and must be documented in the generation output.
+
+Identify the most plausible naive wrong implementation — the solution a capable developer might write on a first attempt that handles the happy path correctly but fails on a structural edge case. Common plausible wrong implementations include:
+
+- Using a single value where an array is needed (modeling one item per entity instead of many)
+- Checking a condition in one direction but not its symmetric case
+- Returning early on the first match without handling remaining inputs
+- Accumulating results without accounting for inputs that produce no result
+- Mutating input data structures
+- Assuming sorted input without sorting
+
+Write out the plausible wrong implementation in one or two sentences. Then trace through each test in the suite and verify that at least one test would produce a wrong result from that implementation. If no test catches the plausible wrong implementation, add tests until one does.
+
+This check must be repeated for each plausible wrong implementation you can identify — not just one. A complex problem may have two or three distinct plausible wrong implementations, each requiring its own catch test.
+
+### Principle 5: Data Model and Output Contract Clarity in Problem Descriptions
+
+Test quality depends on description quality. A vague description allows solvers to make assumptions that lead to plausibly correct but wrong implementations. The following must appear explicitly in any problem description that involves them:
+
+**One-to-many relationships:** If one entity can be associated with multiple instances of another in the input data, state this explicitly. Do not let the solver infer it from the data structure. Example: "A single room may appear multiple times in the bookings array. Each appearance represents a separate booking for that room."
+
+**Output length invariance:** If the function returns an array where each element corresponds to an input element, state explicitly that the output array must have the same length as the input array. State what value appears at positions where no result exists.
+
+**Ordering of results:** If output order is specified (same order as input, sorted, etc.), state it explicitly with an example.
+
+**Conflict and boundary definitions:** If the problem involves any binary relationship between items (overlap, conflict, adjacency, containment), define it precisely using inequalities, not prose. "Two intervals conflict if one starts before the other ends and ends after the other starts: `a.start < b.end && b.start < a.end`."
+
+**Null and sentinel semantics:** If the function can return null, None, -1, or similar, state what it means and when it occurs.
+
+### Principle 6: Test Naming
+
+Test names must be behavioral descriptions that tell the reader what scenario is being tested, not what the function does. A test name is adequate if reading it tells you what edge case or behavior it covers without reading the test body.
+
+Poor: "handles multiple rooms"
+Good: "returns null at positions where no room meets minimum capacity"
+
+Poor: "basic case"
+Good: "assigns smallest-capacity room that meets minimum when multiple rooms qualify"
+
+Names must be unique within a suite. Names must not reveal the expected output — "returns null when no room available" is acceptable, "returns [null] when capacity is 15 and max room is 10" is not.
+
+---
+
+## Section 7: Test Authoring Rules
 
 ### Single Suite File Convention
 
@@ -330,7 +420,7 @@ Every test in the suite file must be referenced by at least one part's `activeTe
 
 ---
 
-## Section 7: Self-Check Checklist
+## Section 8: Self-Check Checklist
 
 Run through this checklist before writing any files. Every answer must match the expected value.
 
@@ -356,10 +446,20 @@ Run through this checklist before writing any files. Every answer must match the
 20. Is the run inputs count 2-3 per part? **Must be Yes.**
 21. Does every generated `runInputs` entry include an `expected` field? **Must be Yes.**
 22. For "both" language config: does each scenario have matching JS and Python entries with correct naming conventions? **Must be Yes if applicable.**
+23. Does the suite have at least 8 tests for each non-trivial part? **Must be Yes.**
+24. Does the suite have at least 2 structurally distinct happy path tests per part? **Must be Yes.**
+25. Is there a test that verifies output length or shape invariance for any collection-returning function? **Must be Yes if applicable.**
+26. Is there a test with a mixed result — some inputs succeed, some return null or sentinel? **Must be Yes if applicable.**
+27. Is there a test exercising the many side of every one-to-many relationship in the data model? **Must be Yes if applicable.**
+28. Does the suite cover all four interval overlap cases for any interval problem? **Must be Yes if applicable.**
+29. Has the adversarial implementation check been performed and documented? **Must be Yes.**
+30. Did the adversarial check identify any plausible wrong implementation not caught by a test? **Must be No — if Yes, add tests before proceeding.**
+31. Does every test name describe a distinct behavioral scenario without revealing the expected output? **Must be Yes.**
+32. Does the problem description explicitly state: one-to-many relationships, output length contract, conflict/boundary definitions, and null semantics? **Must be Yes for each that applies.**
 
 ---
 
-## Section 8: Worked Example
+## Section 9: Worked Example
 
 A two-part problem in real-world style. Part 1 asks the user to implement a rate limiter that tracks request counts per time window. Part 2 extends it to support multiple clients with independent limits.
 

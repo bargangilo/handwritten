@@ -19,14 +19,24 @@
   "parts": [
     {
       "title": "Find best room for each request",
-      "description": "A coworking space has meeting rooms of different capacities. Some rooms already have bookings. Implement findRooms(rooms, bookings, requests) that takes an array of room objects (each with an id and capacity), an array of existing booking objects (each with a roomId, start time, and end time), and an array of request objects (each with a start time, end time, and minimum capacity needed). For each request, return the id of the smallest-capacity room that meets the minimum capacity and is not booked during the requested time window. Two time windows conflict if one starts before the other ends and ends after the other starts. If no room is available, return null. Return the results as an array in the same order as the requests. Each request is evaluated independently against the original bookings only.",
+      "description": "A coworking space has meeting rooms of different capacities. Some rooms already have bookings. A single room may appear more than once in the bookings array — each appearance represents a separate booking for that room. Implement findRooms(rooms, bookings, requests) / find_rooms(rooms, bookings, requests) that takes an array of room objects (each with an id and capacity), an array of existing booking objects (each with a roomId/room_id, start time, and end time), and an array of request objects (each with a start time, end time, and minimum capacity needed). For each request, return the id of the smallest-capacity room that meets the minimum capacity and has no booking that conflicts with the requested time window. Two time windows conflict if one starts before the other ends and ends after the other starts: `a.start < b.end && b.start < a.end`. Adjacent intervals (one ends exactly when the other starts) do not conflict. If no room is available for a request, return null (or None) at that position. Return the results as an array with the same length as the requests array, in the same order, with null at any index where no room is available. Each request is evaluated independently against the original bookings only.",
       "activeTests": [
         "assigns smallest room that fits",
         "returns null when no room has enough capacity",
         "skips booked rooms during requested time",
         "room available outside booking window",
         "empty bookings assigns first fitting room",
-        "handles many rooms and requests"
+        "handles many rooms and requests",
+        "output array length matches requests array length with mixed results",
+        "room with multiple bookings is skipped when any booking conflicts",
+        "request that fully envelops a booking conflicts",
+        "request fully contained within a booking conflicts",
+        "partial overlap from the left conflicts",
+        "partial overlap from the right conflicts",
+        "adjacent intervals do not conflict",
+        "room at exact capacity threshold is selected",
+        "single request with no rooms returns null",
+        "unsorted rooms still assigns smallest fitting room"
       ],
       "scaffold": {
         "js": "/**\n * Find the best available meeting room for each request.\n *\n * @param {{id: string, capacity: number}[]} rooms - Available rooms\n * @param {{roomId: string, start: number, end: number}[]} bookings - Existing bookings\n * @param {{start: number, end: number, minCapacity: number}[]} requests - Meeting requests\n * @returns {(string|null)[]} Room ID for each request, or null if no room available\n */\nfunction findRooms(rooms, bookings, requests) {\n  // TODO: implement\n}\n\nmodule.exports = { findRooms };\n",

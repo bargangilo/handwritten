@@ -9,6 +9,7 @@ describe("initialState", () => {
     expect(initialState.selectedProblem).toBeNull();
     expect(initialState.selectedLanguage).toBeNull();
     expect(initialState.countdownSeconds).toBeNull();
+    expect(initialState.timerMode).toBeNull();
   });
 
   test("has run result fields initialized", () => {
@@ -107,6 +108,19 @@ describe("reducer", () => {
     });
     expect(state.screen).toBe(Screen.SESSION_ACTIVE);
     expect(state.countdownSeconds).toBe(1800);
+    expect(state.timerMode).toBeNull();
+  });
+
+  test("SET_COUNTDOWN stores timerMode when provided", () => {
+    const prev = { ...initialState, screen: Screen.COUNTDOWN_PROMPT };
+    const state = reducer(prev, {
+      type: Action.SET_COUNTDOWN,
+      countdownSeconds: null,
+      timerMode: "disabled",
+    });
+    expect(state.screen).toBe(Screen.SESSION_ACTIVE);
+    expect(state.countdownSeconds).toBeNull();
+    expect(state.timerMode).toBe("disabled");
   });
 
   test("SESSION_END resets to initial state", () => {

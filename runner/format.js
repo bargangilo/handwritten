@@ -37,6 +37,7 @@ export function getMilestoneWarning(totalElapsedSeconds, mode, countdownSeconds)
 }
 
 export function formatTimerSegment(timerDisplay) {
+  if (!timerDisplay || timerDisplay.mode === "disabled") return null;
   const { totalElapsedSeconds: elapsed, remaining, isOvertime, isPaused, mode } = timerDisplay;
   const timeStr = formatSeconds(mode === "countdown" && !isOvertime ? remaining : elapsed);
 

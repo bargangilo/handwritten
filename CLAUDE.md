@@ -204,6 +204,8 @@ The four skill files are in `.claude/skills/<name>/SKILL.md` — they are instru
 
 The init script `.agents/scripts/init-skills.js` exports skills for non-Claude-Code agents by stripping YAML frontmatter from `.claude/skills/*/SKILL.md` and writing the bodies to `.agents/skills/<name>.md`. The `.agents/skills/` directory is gitignored (generated output). The CLI's "Export Skills" menu option runs this script.
 
+Test suite adequacy is enforced by the generation skill via `.agents/context/problem-authoring-guide.md` Test Generation Standards. When reviewing or modifying a generated test suite, apply the same standards — minimum 8 tests per non-trivial part, mandatory coverage categories, and adversarial implementation check. Do not reduce test count when editing suites.
+
 ## Things to Never Do
 
 - Use a package manager other than Yarn (`npm install`, `npx`, `pnpm`)

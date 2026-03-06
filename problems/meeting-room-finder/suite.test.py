@@ -73,3 +73,117 @@ def test_handles_many_rooms_and_requests():
     result = find_rooms(rooms, bookings, requests)
     assert len(result) == 1000
     assert result[0] == "R501"
+
+
+def test_output_array_length_matches_requests_array_length_with_mixed_results():
+    from main import find_rooms
+    rooms = [
+        {"id": "A", "capacity": 5},
+        {"id": "B", "capacity": 10},
+    ]
+    bookings = [{"room_id": "B", "start": 9, "end": 11}]
+    requests = [
+        {"start": 9, "end": 10, "min_capacity": 3},
+        {"start": 9, "end": 10, "min_capacity": 8},
+        {"start": 12, "end": 13, "min_capacity": 6},
+    ]
+    result = find_rooms(rooms, bookings, requests)
+    assert len(result) == 3
+    assert result == ["A", None, "B"]
+
+
+def test_room_with_multiple_bookings_is_skipped_when_any_booking_conflicts():
+    from main import find_rooms
+    rooms = [
+        {"id": "A", "capacity": 10},
+        {"id": "B", "capacity": 15},
+    ]
+    bookings = [
+        {"room_id": "A", "start": 9, "end": 11},
+        {"room_id": "A", "start": 13, "end": 15},
+    ]
+    requests = [{"start": 14, "end": 15, "min_capacity": 5}]
+    assert find_rooms(rooms, bookings, requests) == ["B"]
+
+
+def test_request_that_fully_envelops_a_booking_conflicts():
+    from main import find_rooms
+    rooms = [
+        {"id": "A", "capacity": 10},
+        {"id": "B", "capacity": 15},
+    ]
+    bookings = [{"room_id": "A", "start": 10, "end": 11}]
+    requests = [{"start": 9, "end": 12, "min_capacity": 5}]
+    assert find_rooms(rooms, bookings, requests) == ["B"]
+
+
+def test_request_fully_contained_within_a_booking_conflicts():
+    from main import find_rooms
+    rooms = [
+        {"id": "A", "capacity": 10},
+        {"id": "B", "capacity": 15},
+    ]
+    bookings = [{"room_id": "A", "start": 8, "end": 17}]
+    requests = [{"start": 10, "end": 12, "min_capacity": 5}]
+    assert find_rooms(rooms, bookings, requests) == ["B"]
+
+
+def test_partial_overlap_from_the_left_conflicts():
+    from main import find_rooms
+    rooms = [
+        {"id": "A", "capacity": 10},
+        {"id": "B", "capacity": 15},
+    ]
+    bookings = [{"room_id": "A", "start": 10, "end": 14}]
+    requests = [{"start": 8, "end": 12, "min_capacity": 5}]
+    assert find_rooms(rooms, bookings, requests) == ["B"]
+
+
+def test_partial_overlap_from_the_right_conflicts():
+    from main import find_rooms
+    rooms = [
+        {"id": "A", "capacity": 10},
+        {"id": "B", "capacity": 15},
+    ]
+    bookings = [{"room_id": "A", "start": 8, "end": 12}]
+    requests = [{"start": 10, "end": 14, "min_capacity": 5}]
+    assert find_rooms(rooms, bookings, requests) == ["B"]
+
+
+def test_adjacent_intervals_do_not_conflict():
+    from main import find_rooms
+    rooms = [{"id": "A", "capacity": 10}]
+    bookings = [{"room_id": "A", "start": 9, "end": 11}]
+    requests = [{"start": 11, "end": 13, "min_capacity": 5}]
+    assert find_rooms(rooms, bookings, requests) == ["A"]
+
+
+def test_room_at_exact_capacity_threshold_is_selected():
+    from main import find_rooms
+    rooms = [
+        {"id": "A", "capacity": 10},
+        {"id": "B", "capacity": 20},
+    ]
+    bookings = []
+    requests = [{"start": 9, "end": 10, "min_capacity": 10}]
+    assert find_rooms(rooms, bookings, requests) == ["A"]
+
+
+def test_single_request_with_no_rooms_returns_null():
+    from main import find_rooms
+    rooms = []
+    bookings = []
+    requests = [{"start": 9, "end": 10, "min_capacity": 1}]
+    assert find_rooms(rooms, bookings, requests) == [None]
+
+
+def test_unsorted_rooms_still_assigns_smallest_fitting_room():
+    from main import find_rooms
+    rooms = [
+        {"id": "C", "capacity": 20},
+        {"id": "A", "capacity": 5},
+        {"id": "B", "capacity": 10},
+    ]
+    bookings = []
+    requests = [{"start": 9, "end": 10, "min_capacity": 8}]
+    assert find_rooms(rooms, bookings, requests) == ["B"]
