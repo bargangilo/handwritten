@@ -36,15 +36,99 @@
           "label": "basic case",
           "language": "javascript",
           "function": "twoSum",
-          "args": [[1, 5, 3, 7], 8],
-          "expected": [0, 3]
+          "args": [[2, 7, 11, 15], 9],
+          "expected": [0, 1]
+        },
+        {
+          "label": "basic case",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[2, 7, 11, 15], 9],
+          "expected": [0, 1]
+        },
+        {
+          "label": "duplicate values",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[3, 3], 6],
+          "expected": [0, 1]
+        },
+        {
+          "label": "duplicate values",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[3, 3], 6],
+          "expected": [0, 1]
         },
         {
           "label": "pair in the middle of a larger array",
           "language": "javascript",
           "function": "twoSum",
-          "args": [[4, 3, 8, 1, 6], 9],
-          "expected": [1, 4]
+          "args": [[10, 20, 3, 7, 40, 50], 10],
+          "expected": [2, 3]
+        },
+        {
+          "label": "pair in the middle of a larger array",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[10, 20, 3, 7, 40, 50], 10],
+          "expected": [2, 3]
+        },
+        {
+          "label": "target is zero with positive and negative values",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[4, -4, 8, 2], 0],
+          "expected": [0, 1]
+        },
+        {
+          "label": "target is zero with positive and negative values",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[4, -4, 8, 2], 0],
+          "expected": [0, 1]
+        },
+        {
+          "label": "does not use same element twice when value is half of target",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[5, 3, 10, 7], 10],
+          "expected": [1, 3]
+        },
+        {
+          "label": "does not use same element twice when value is half of target",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[5, 3, 10, 7], 10],
+          "expected": [1, 3]
+        },
+        {
+          "label": "two element array that sums to target",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[1, 4], 5],
+          "expected": [0, 1]
+        },
+        {
+          "label": "two element array that sums to target",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[1, 4], 5],
+          "expected": [0, 1]
+        },
+        {
+          "label": "solution uses last element in array",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[8, 1, 3, 12, 6], 18],
+          "expected": [0, 3]
+        },
+        {
+          "label": "solution uses last element in array",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[8, 1, 3, 12, 6], 18],
+          "expected": [0, 3]
         }
       ]
     },
@@ -70,18 +154,116 @@
       },
       "runInputs": [
         {
-          "label": "negative numbers",
+          "label": "basic case",
           "language": "javascript",
           "function": "twoSum",
-          "args": [[-3, 1, 4, -1], 0],
+          "args": [[2, 7, 11, 15], 9],
+          "expected": [0, 1]
+        },
+        {
+          "label": "basic case",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[2, 7, 11, 15], 9],
+          "expected": [0, 1]
+        },
+        {
+          "label": "duplicate values",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[3, 3], 6],
+          "expected": [0, 1]
+        },
+        {
+          "label": "duplicate values",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[3, 3], 6],
+          "expected": [0, 1]
+        },
+        {
+          "label": "pair in the middle of a larger array",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[10, 20, 3, 7, 40, 50], 10],
+          "expected": [2, 3]
+        },
+        {
+          "label": "pair in the middle of a larger array",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[10, 20, 3, 7, 40, 50], 10],
+          "expected": [2, 3]
+        },
+        {
+          "label": "target is zero with positive and negative values",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[4, -4, 8, 2], 0],
+          "expected": [0, 1]
+        },
+        {
+          "label": "target is zero with positive and negative values",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[4, -4, 8, 2], 0],
+          "expected": [0, 1]
+        },
+        {
+          "label": "does not use same element twice when value is half of target",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[5, 3, 10, 7], 10],
           "expected": [1, 3]
         },
         {
-          "label": "large input",
+          "label": "does not use same element twice when value is half of target",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[5, 3, 10, 7], 10],
+          "expected": [1, 3]
+        },
+        {
+          "label": "two element array that sums to target",
           "language": "javascript",
           "function": "twoSum",
-          "args": [[10, 20, 30, 40, 50], 90],
-          "expected": [3, 4]
+          "args": [[1, 4], 5],
+          "expected": [0, 1]
+        },
+        {
+          "label": "two element array that sums to target",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[1, 4], 5],
+          "expected": [0, 1]
+        },
+        {
+          "label": "solution uses last element in array",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[8, 1, 3, 12, 6], 18],
+          "expected": [0, 3]
+        },
+        {
+          "label": "solution uses last element in array",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[8, 1, 3, 12, 6], 18],
+          "expected": [0, 3]
+        },
+        {
+          "label": "negative numbers",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[-1, -2, -3, -4, -5], -8],
+          "expected": [2, 4]
+        },
+        {
+          "label": "negative numbers",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[-1, -2, -3, -4, -5], -8],
+          "expected": [2, 4]
         }
       ]
     },
@@ -116,18 +298,228 @@
       },
       "runInputs": [
         {
+          "label": "basic case",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[2, 7, 11, 15], 9],
+          "expected": [0, 1]
+        },
+        {
+          "label": "basic case",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[2, 7, 11, 15], 9],
+          "expected": [0, 1]
+        },
+        {
+          "label": "duplicate values",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[3, 3], 6],
+          "expected": [0, 1]
+        },
+        {
+          "label": "duplicate values",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[3, 3], 6],
+          "expected": [0, 1]
+        },
+        {
+          "label": "pair in the middle of a larger array",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[10, 20, 3, 7, 40, 50], 10],
+          "expected": [2, 3]
+        },
+        {
+          "label": "pair in the middle of a larger array",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[10, 20, 3, 7, 40, 50], 10],
+          "expected": [2, 3]
+        },
+        {
+          "label": "target is zero with positive and negative values",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[4, -4, 8, 2], 0],
+          "expected": [0, 1]
+        },
+        {
+          "label": "target is zero with positive and negative values",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[4, -4, 8, 2], 0],
+          "expected": [0, 1]
+        },
+        {
+          "label": "does not use same element twice when value is half of target",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[5, 3, 10, 7], 10],
+          "expected": [1, 3]
+        },
+        {
+          "label": "does not use same element twice when value is half of target",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[5, 3, 10, 7], 10],
+          "expected": [1, 3]
+        },
+        {
+          "label": "two element array that sums to target",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[1, 4], 5],
+          "expected": [0, 1]
+        },
+        {
+          "label": "two element array that sums to target",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[1, 4], 5],
+          "expected": [0, 1]
+        },
+        {
+          "label": "solution uses last element in array",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[8, 1, 3, 12, 6], 18],
+          "expected": [0, 3]
+        },
+        {
+          "label": "solution uses last element in array",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[8, 1, 3, 12, 6], 18],
+          "expected": [0, 3]
+        },
+        {
+          "label": "negative numbers",
+          "language": "javascript",
+          "function": "twoSum",
+          "args": [[-1, -2, -3, -4, -5], -8],
+          "expected": [2, 4]
+        },
+        {
+          "label": "negative numbers",
+          "language": "python",
+          "function": "two_sum",
+          "args": [[-1, -2, -3, -4, -5], -8],
+          "expected": [2, 4]
+        },
+        {
           "label": "basic three sum",
           "language": "javascript",
           "function": "threeSum",
-          "args": [[1, 2, 8, 4, 5], 7],
-          "expected": [[1, 2, 4]]
+          "args": [[1, 2, 3, 4, 5], 9],
+          "expected": [[1, 3, 5], [2, 3, 4]]
+        },
+        {
+          "label": "basic three sum",
+          "language": "python",
+          "function": "three_sum",
+          "args": [[1, 2, 3, 4, 5], 9],
+          "expected": [[1, 3, 5], [2, 3, 4]]
+        },
+        {
+          "label": "no three sum solution",
+          "language": "javascript",
+          "function": "threeSum",
+          "args": [[1, 2, 3], 100],
+          "expected": []
+        },
+        {
+          "label": "no three sum solution",
+          "language": "python",
+          "function": "three_sum",
+          "args": [[1, 2, 3], 100],
+          "expected": []
+        },
+        {
+          "label": "three sum with duplicates",
+          "language": "javascript",
+          "function": "threeSum",
+          "args": [[1, 1, 1, 2, 2, 3, 3], 6],
+          "expected": [[1, 2, 3]]
+        },
+        {
+          "label": "three sum with duplicates",
+          "language": "python",
+          "function": "three_sum",
+          "args": [[1, 1, 1, 2, 2, 3, 3], 6],
+          "expected": [[1, 2, 3]]
+        },
+        {
+          "label": "three sum negative numbers",
+          "language": "javascript",
+          "function": "threeSum",
+          "args": [[-1, 0, 1, 2, -1, -4], 0],
+          "expected": [[-1, -1, 2], [-1, 0, 1]]
+        },
+        {
+          "label": "three sum negative numbers",
+          "language": "python",
+          "function": "three_sum",
+          "args": [[-1, 0, 1, 2, -1, -4], 0],
+          "expected": [[-1, -1, 2], [-1, 0, 1]]
         },
         {
           "label": "three sum single valid triplet",
           "language": "javascript",
           "function": "threeSum",
-          "args": [[3, 7, 2, 5, 1], 15],
-          "expected": [[3, 5, 7]]
+          "args": [[1, 2, 3], 6],
+          "expected": [[1, 2, 3]]
+        },
+        {
+          "label": "three sum single valid triplet",
+          "language": "python",
+          "function": "three_sum",
+          "args": [[1, 2, 3], 6],
+          "expected": [[1, 2, 3]]
+        },
+        {
+          "label": "three sum with all same values",
+          "language": "javascript",
+          "function": "threeSum",
+          "args": [[5, 5, 5, 5], 15],
+          "expected": [[5, 5, 5]]
+        },
+        {
+          "label": "three sum with all same values",
+          "language": "python",
+          "function": "three_sum",
+          "args": [[5, 5, 5, 5], 15],
+          "expected": [[5, 5, 5]]
+        },
+        {
+          "label": "three sum returns empty for two element input",
+          "language": "javascript",
+          "function": "threeSum",
+          "args": [[1, 2], 3],
+          "expected": []
+        },
+        {
+          "label": "three sum returns empty for two element input",
+          "language": "python",
+          "function": "three_sum",
+          "args": [[1, 2], 3],
+          "expected": []
+        },
+        {
+          "label": "three sum with zeros",
+          "language": "javascript",
+          "function": "threeSum",
+          "args": [[0, 0, 0, 0], 0],
+          "expected": [[0, 0, 0]]
+        },
+        {
+          "label": "three sum with zeros",
+          "language": "python",
+          "function": "three_sum",
+          "args": [[0, 0, 0, 0], 0],
+          "expected": [[0, 0, 0]]
         }
       ]
     }

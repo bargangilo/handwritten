@@ -34,18 +34,130 @@
       },
       "runInputs": [
         {
-          "label": "mixed depth",
+          "label": "already flat array",
           "language": "javascript",
           "function": "flattenArray",
-          "args": [[1, [2, 3], [4, [5]]]],
-          "expected": [1, 2, 3, 4, 5]
+          "args": [[1, 2, 3]],
+          "expected": [1, 2, 3]
+        },
+        {
+          "label": "already flat array",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[1, 2, 3]],
+          "expected": [1, 2, 3]
+        },
+        {
+          "label": "single level nesting",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[1, [2, 3], 4]],
+          "expected": [1, 2, 3, 4]
+        },
+        {
+          "label": "single level nesting",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[1, [2, 3], 4]],
+          "expected": [1, 2, 3, 4]
         },
         {
           "label": "deep nesting",
           "language": "javascript",
           "function": "flattenArray",
-          "args": [[[1, [2]], 3, [[4]]]],
-          "expected": [1, 2, 3, 4]
+          "args": [[1, [2, [3, [4, [5]]]]]],
+          "expected": [1, 2, 3, 4, 5]
+        },
+        {
+          "label": "deep nesting",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[1, [2, [3, [4, [5]]]]]],
+          "expected": [1, 2, 3, 4, 5]
+        },
+        {
+          "label": "empty array",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[]],
+          "expected": []
+        },
+        {
+          "label": "empty array",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[]],
+          "expected": []
+        },
+        {
+          "label": "mixed depth",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[1], 2, [[3]], [4, [5, 6]]]],
+          "expected": [1, 2, 3, 4, 5, 6]
+        },
+        {
+          "label": "mixed depth",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[[1], 2, [[3]], [4, [5, 6]]]],
+          "expected": [1, 2, 3, 4, 5, 6]
+        },
+        {
+          "label": "single element array",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[42]],
+          "expected": [42]
+        },
+        {
+          "label": "single element array",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[42]],
+          "expected": [42]
+        },
+        {
+          "label": "empty sub-arrays mixed with values",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[], 1, [[], 2], []]],
+          "expected": [1, 2]
+        },
+        {
+          "label": "empty sub-arrays mixed with values",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[[], 1, [[], 2], []]],
+          "expected": [1, 2]
+        },
+        {
+          "label": "preserves element order across nesting levels",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[3, 1], [4], [[1, 5]]]],
+          "expected": [3, 1, 4, 1, 5]
+        },
+        {
+          "label": "preserves element order across nesting levels",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[[3, 1], [4], [[1, 5]]]],
+          "expected": [3, 1, 4, 1, 5]
+        },
+        {
+          "label": "preserves zero values in flattened output",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[0, [1, [0, 2]], 0]],
+          "expected": [0, 1, 0, 2, 0]
+        },
+        {
+          "label": "preserves zero values in flattened output",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[0, [1, [0, 2]], 0]],
+          "expected": [0, 1, 0, 2, 0]
         }
       ]
     },
@@ -79,18 +191,242 @@
       },
       "runInputs": [
         {
+          "label": "already flat array",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[1, 2, 3]],
+          "expected": [1, 2, 3]
+        },
+        {
+          "label": "already flat array",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[1, 2, 3]],
+          "expected": [1, 2, 3]
+        },
+        {
+          "label": "single level nesting",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[1, [2, 3], 4]],
+          "expected": [1, 2, 3, 4]
+        },
+        {
+          "label": "single level nesting",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[1, [2, 3], 4]],
+          "expected": [1, 2, 3, 4]
+        },
+        {
+          "label": "deep nesting",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[1, [2, [3, [4, [5]]]]]],
+          "expected": [1, 2, 3, 4, 5]
+        },
+        {
+          "label": "deep nesting",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[1, [2, [3, [4, [5]]]]]],
+          "expected": [1, 2, 3, 4, 5]
+        },
+        {
+          "label": "empty array",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[]],
+          "expected": []
+        },
+        {
+          "label": "empty array",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[]],
+          "expected": []
+        },
+        {
+          "label": "mixed depth",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[1], 2, [[3]], [4, [5, 6]]]],
+          "expected": [1, 2, 3, 4, 5, 6]
+        },
+        {
+          "label": "mixed depth",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[[1], 2, [[3]], [4, [5, 6]]]],
+          "expected": [1, 2, 3, 4, 5, 6]
+        },
+        {
+          "label": "single element array",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[42]],
+          "expected": [42]
+        },
+        {
+          "label": "single element array",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[42]],
+          "expected": [42]
+        },
+        {
+          "label": "empty sub-arrays mixed with values",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[], 1, [[], 2], []]],
+          "expected": [1, 2]
+        },
+        {
+          "label": "empty sub-arrays mixed with values",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[[], 1, [[], 2], []]],
+          "expected": [1, 2]
+        },
+        {
+          "label": "preserves element order across nesting levels",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[[3, 1], [4], [[1, 5]]]],
+          "expected": [3, 1, 4, 1, 5]
+        },
+        {
+          "label": "preserves element order across nesting levels",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[[3, 1], [4], [[1, 5]]]],
+          "expected": [3, 1, 4, 1, 5]
+        },
+        {
+          "label": "preserves zero values in flattened output",
+          "language": "javascript",
+          "function": "flattenArray",
+          "args": [[0, [1, [0, 2]], 0]],
+          "expected": [0, 1, 0, 2, 0]
+        },
+        {
+          "label": "preserves zero values in flattened output",
+          "language": "python",
+          "function": "flatten_array",
+          "args": [[0, [1, [0, 2]], 0]],
+          "expected": [0, 1, 0, 2, 0]
+        },
+        {
           "label": "single number nested deep",
           "language": "javascript",
           "function": "sumNested",
-          "args": [[1, [2, [3, [4]]]]],
-          "expected": 10
+          "args": [[[[[[42]]]]]],
+          "expected": 42
+        },
+        {
+          "label": "single number nested deep",
+          "language": "python",
+          "function": "sum_nested",
+          "args": [[[[[[42]]]]]],
+          "expected": 42
         },
         {
           "label": "multiple numbers across depths",
           "language": "javascript",
           "function": "sumNested",
-          "args": [[[10], [20, [30]]]],
-          "expected": 60
+          "args": [[1, [2, [3]], 4]],
+          "expected": 10
+        },
+        {
+          "label": "multiple numbers across depths",
+          "language": "python",
+          "function": "sum_nested",
+          "args": [[1, [2, [3]], 4]],
+          "expected": 10
+        },
+        {
+          "label": "empty nested array",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[]],
+          "expected": 0
+        },
+        {
+          "label": "empty nested array",
+          "language": "python",
+          "function": "sum_nested",
+          "args": [[]],
+          "expected": 0
+        },
+        {
+          "label": "all zeros",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[0, [0, [0]], 0]],
+          "expected": 0
+        },
+        {
+          "label": "all zeros",
+          "language": "python",
+          "function": "sum_nested",
+          "args": [[0, [0, [0]], 0]],
+          "expected": 0
+        },
+        {
+          "label": "large nested structure",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[1, [2, [3, [4, [5, [6, [7, [8, [9, [10]]]]]]]]]]],
+          "expected": 55
+        },
+        {
+          "label": "large nested structure",
+          "language": "python",
+          "function": "sum_nested",
+          "args": [[1, [2, [3, [4, [5, [6, [7, [8, [9, [10]]]]]]]]]]],
+          "expected": 55
+        },
+        {
+          "label": "negative numbers sum correctly",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[-1, [2, [-3]], 4]],
+          "expected": 2
+        },
+        {
+          "label": "negative numbers sum correctly",
+          "language": "python",
+          "function": "sum_nested",
+          "args": [[-1, [2, [-3]], 4]],
+          "expected": 2
+        },
+        {
+          "label": "nested empty sub-arrays sum to zero",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[[], [[]], [[[]]]]],
+          "expected": 0
+        },
+        {
+          "label": "nested empty sub-arrays sum to zero",
+          "language": "python",
+          "function": "sum_nested",
+          "args": [[[], [[]], [[[]]]]],
+          "expected": 0
+        },
+        {
+          "label": "single flat number",
+          "language": "javascript",
+          "function": "sumNested",
+          "args": [[7]],
+          "expected": 7
+        },
+        {
+          "label": "single flat number",
+          "language": "python",
+          "function": "sum_nested",
+          "args": [[7]],
+          "expected": 7
         }
       ]
     }

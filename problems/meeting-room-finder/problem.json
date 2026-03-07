@@ -45,26 +45,312 @@
       },
       "runInputs": [
         {
-          "label": "skips booked rooms during requested time",
-          "language": "javascript",
-          "function": "findRooms",
-          "args": [
-            [{"id": "S", "capacity": 4}, {"id": "M", "capacity": 8}, {"id": "L", "capacity": 15}],
-            [{"roomId": "M", "start": 9, "end": 11}],
-            [{"start": 9, "end": 10, "minCapacity": 6}, {"start": 12, "end": 13, "minCapacity": 3}]
-          ],
-          "expected": ["L", "S"]
-        },
-        {
           "label": "assigns smallest room that fits",
           "language": "javascript",
           "function": "findRooms",
           "args": [
-            [{"id": "R1", "capacity": 6}, {"id": "R2", "capacity": 10}, {"id": "R3", "capacity": 6}],
-            [{"roomId": "R1", "start": 8, "end": 12}],
-            [{"start": 10, "end": 11, "minCapacity": 5}]
+            [{"id": "A", "capacity": 5}, {"id": "B", "capacity": 10}, {"id": "C", "capacity": 20}],
+            [],
+            [{"start": 9, "end": 10, "minCapacity": 8}]
           ],
-          "expected": ["R3"]
+          "expected": ["B"]
+        },
+        {
+          "label": "assigns smallest room that fits",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 5}, {"id": "B", "capacity": 10}, {"id": "C", "capacity": 20}],
+            [],
+            [{"start": 9, "end": 10, "min_capacity": 8}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "returns null when no room has enough capacity",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 5}, {"id": "B", "capacity": 10}],
+            [],
+            [{"start": 9, "end": 10, "minCapacity": 15}]
+          ],
+          "expected": [null]
+        },
+        {
+          "label": "returns null when no room has enough capacity",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 5}, {"id": "B", "capacity": 10}],
+            [],
+            [{"start": 9, "end": 10, "min_capacity": 15}]
+          ],
+          "expected": [null]
+        },
+        {
+          "label": "skips booked rooms during requested time",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}, {"id": "C", "capacity": 20}],
+            [{"roomId": "A", "start": 9, "end": 11}],
+            [{"start": 9, "end": 10, "minCapacity": 8}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "skips booked rooms during requested time",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}, {"id": "C", "capacity": 20}],
+            [{"room_id": "A", "start": 9, "end": 11}],
+            [{"start": 9, "end": 10, "min_capacity": 8}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "room available outside booking window",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 20}],
+            [{"roomId": "A", "start": 14, "end": 16}],
+            [{"start": 9, "end": 11, "minCapacity": 5}]
+          ],
+          "expected": ["A"]
+        },
+        {
+          "label": "room available outside booking window",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 20}],
+            [{"room_id": "A", "start": 14, "end": 16}],
+            [{"start": 9, "end": 11, "min_capacity": 5}]
+          ],
+          "expected": ["A"]
+        },
+        {
+          "label": "empty bookings assigns first fitting room",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "X", "capacity": 3}, {"id": "Y", "capacity": 7}, {"id": "Z", "capacity": 12}],
+            [],
+            [{"start": 10, "end": 11, "minCapacity": 1}, {"start": 12, "end": 13, "minCapacity": 10}]
+          ],
+          "expected": ["X", "Z"]
+        },
+        {
+          "label": "empty bookings assigns first fitting room",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "X", "capacity": 3}, {"id": "Y", "capacity": 7}, {"id": "Z", "capacity": 12}],
+            [],
+            [{"start": 10, "end": 11, "min_capacity": 1}, {"start": 12, "end": 13, "min_capacity": 10}]
+          ],
+          "expected": ["X", "Z"]
+        },
+        {
+          "label": "room with multiple bookings is skipped when any booking conflicts",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"roomId": "A", "start": 9, "end": 11}, {"roomId": "A", "start": 13, "end": 15}],
+            [{"start": 14, "end": 15, "minCapacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "room with multiple bookings is skipped when any booking conflicts",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"room_id": "A", "start": 9, "end": 11}, {"room_id": "A", "start": 13, "end": 15}],
+            [{"start": 14, "end": 15, "min_capacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "request that fully envelops a booking conflicts",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"roomId": "A", "start": 10, "end": 11}],
+            [{"start": 9, "end": 12, "minCapacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "request that fully envelops a booking conflicts",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"room_id": "A", "start": 10, "end": 11}],
+            [{"start": 9, "end": 12, "min_capacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "request fully contained within a booking conflicts",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"roomId": "A", "start": 8, "end": 17}],
+            [{"start": 10, "end": 12, "minCapacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "request fully contained within a booking conflicts",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"room_id": "A", "start": 8, "end": 17}],
+            [{"start": 10, "end": 12, "min_capacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "partial overlap from the left conflicts",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"roomId": "A", "start": 10, "end": 14}],
+            [{"start": 8, "end": 12, "minCapacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "partial overlap from the left conflicts",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"room_id": "A", "start": 10, "end": 14}],
+            [{"start": 8, "end": 12, "min_capacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "partial overlap from the right conflicts",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"roomId": "A", "start": 8, "end": 12}],
+            [{"start": 10, "end": 14, "minCapacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "partial overlap from the right conflicts",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 15}],
+            [{"room_id": "A", "start": 8, "end": 12}],
+            [{"start": 10, "end": 14, "min_capacity": 5}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "adjacent intervals do not conflict",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}],
+            [{"roomId": "A", "start": 9, "end": 11}],
+            [{"start": 11, "end": 13, "minCapacity": 5}]
+          ],
+          "expected": ["A"]
+        },
+        {
+          "label": "adjacent intervals do not conflict",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}],
+            [{"room_id": "A", "start": 9, "end": 11}],
+            [{"start": 11, "end": 13, "min_capacity": 5}]
+          ],
+          "expected": ["A"]
+        },
+        {
+          "label": "room at exact capacity threshold is selected",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 20}],
+            [],
+            [{"start": 9, "end": 10, "minCapacity": 10}]
+          ],
+          "expected": ["A"]
+        },
+        {
+          "label": "room at exact capacity threshold is selected",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "A", "capacity": 10}, {"id": "B", "capacity": 20}],
+            [],
+            [{"start": 9, "end": 10, "min_capacity": 10}]
+          ],
+          "expected": ["A"]
+        },
+        {
+          "label": "single request with no rooms returns null",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [],
+            [],
+            [{"start": 9, "end": 10, "minCapacity": 1}]
+          ],
+          "expected": [null]
+        },
+        {
+          "label": "single request with no rooms returns null",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [],
+            [],
+            [{"start": 9, "end": 10, "min_capacity": 1}]
+          ],
+          "expected": [null]
+        },
+        {
+          "label": "unsorted rooms still assigns smallest fitting room",
+          "language": "javascript",
+          "function": "findRooms",
+          "args": [
+            [{"id": "C", "capacity": 20}, {"id": "A", "capacity": 5}, {"id": "B", "capacity": 10}],
+            [],
+            [{"start": 9, "end": 10, "minCapacity": 8}]
+          ],
+          "expected": ["B"]
+        },
+        {
+          "label": "unsorted rooms still assigns smallest fitting room",
+          "language": "python",
+          "function": "find_rooms",
+          "args": [
+            [{"id": "C", "capacity": 20}, {"id": "A", "capacity": 5}, {"id": "B", "capacity": 10}],
+            [],
+            [{"start": 9, "end": 10, "min_capacity": 8}]
+          ],
+          "expected": ["B"]
         }
       ]
     }

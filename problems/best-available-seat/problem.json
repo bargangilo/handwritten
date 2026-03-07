@@ -40,15 +40,141 @@
           "label": "finds best seat for each budget",
           "language": "javascript",
           "function": "findBestSeats",
-          "args": [[25, 50, 75, 100], [60, 30, 90]],
-          "expected": [50, 25, 75]
+          "args": [[50, 30, 80, 20, 60], [45, 70, 10]],
+          "expected": [30, 60, -1]
+        },
+        {
+          "label": "finds best seat for each budget",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[50, 30, 80, 20, 60], [45, 70, 10]],
+          "expected": [30, 60, -1]
         },
         {
           "label": "returns negative one when no seat is affordable",
           "language": "javascript",
           "function": "findBestSeats",
-          "args": [[15, 40, 65], [50, 10]],
-          "expected": [40, -1]
+          "args": [[100, 200, 300], [50, 99]],
+          "expected": [-1, -1]
+        },
+        {
+          "label": "returns negative one when no seat is affordable",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[100, 200, 300], [50, 99]],
+          "expected": [-1, -1]
+        },
+        {
+          "label": "exact budget match returns that price",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[10, 25, 50, 75], [50, 25]],
+          "expected": [50, 25]
+        },
+        {
+          "label": "exact budget match returns that price",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[10, 25, 50, 75], [50, 25]],
+          "expected": [50, 25]
+        },
+        {
+          "label": "returns most expensive when all are affordable",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[5, 10, 15], [100, 20]],
+          "expected": [15, 15]
+        },
+        {
+          "label": "returns most expensive when all are affordable",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[5, 10, 15], [100, 20]],
+          "expected": [15, 15]
+        },
+        {
+          "label": "empty price list returns all negative ones",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[], [10, 20, 30]],
+          "expected": [-1, -1, -1]
+        },
+        {
+          "label": "empty price list returns all negative ones",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[], [10, 20, 30]],
+          "expected": [-1, -1, -1]
+        },
+        {
+          "label": "single budget with single price within budget",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[25], [30]],
+          "expected": [25]
+        },
+        {
+          "label": "single budget with single price within budget",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[25], [30]],
+          "expected": [25]
+        },
+        {
+          "label": "duplicate prices returns highest affordable price",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[30, 30, 50, 50], [35, 55]],
+          "expected": [30, 50]
+        },
+        {
+          "label": "duplicate prices returns highest affordable price",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[30, 30, 50, 50], [35, 55]],
+          "expected": [30, 50]
+        },
+        {
+          "label": "selects most expensive affordable not first affordable",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[10, 90, 50, 30, 70], [60]],
+          "expected": [50]
+        },
+        {
+          "label": "selects most expensive affordable not first affordable",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[10, 90, 50, 30, 70], [60]],
+          "expected": [50]
+        },
+        {
+          "label": "budget of zero with all positive prices returns negative one",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[1, 5, 10], [0]],
+          "expected": [-1]
+        },
+        {
+          "label": "budget of zero with all positive prices returns negative one",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[1, 5, 10], [0]],
+          "expected": [-1]
+        },
+        {
+          "label": "returns zero when a free seat is the best match",
+          "language": "javascript",
+          "function": "findBestSeats",
+          "args": [[0, 50, 100], [0, 25]],
+          "expected": [0, 0]
+        },
+        {
+          "label": "returns zero when a free seat is the best match",
+          "language": "python",
+          "function": "find_best_seats",
+          "args": [[0, 50, 100], [0, 25]],
+          "expected": [0, 0]
         }
       ]
     }

@@ -47,18 +47,88 @@
           "expected": {"gh": "github.com", "gl": "gitlab.com", "bb": "bitbucket.org"}
         },
         {
+          "label": "returns empty object for no entries",
+          "language": "javascript",
+          "function": "buildRegistry",
+          "args": [[]],
+          "expected": {}
+        },
+        {
+          "label": "returns empty object for no entries",
+          "language": "python",
+          "function": "build_registry",
+          "args": [[]],
+          "expected": {}
+        },
+        {
           "label": "first occurrence wins for duplicate codes",
           "language": "javascript",
           "function": "buildRegistry",
-          "args": [[["api", "api.example.com"], ["api", "api.backup.com"], ["web", "www.example.com"]]],
-          "expected": {"api": "api.example.com", "web": "www.example.com"}
+          "args": [[["api", "api.primary.com"], ["cdn", "cdn.example.com"], ["api", "api.fallback.com"]]],
+          "expected": {"api": "api.primary.com", "cdn": "cdn.example.com"}
         },
         {
           "label": "first occurrence wins for duplicate codes",
           "language": "python",
           "function": "build_registry",
-          "args": [[["api", "api.example.com"], ["api", "api.backup.com"], ["web", "www.example.com"]]],
-          "expected": {"api": "api.example.com", "web": "www.example.com"}
+          "args": [[["api", "api.primary.com"], ["cdn", "cdn.example.com"], ["api", "api.fallback.com"]]],
+          "expected": {"api": "api.primary.com", "cdn": "cdn.example.com"}
+        },
+        {
+          "label": "single entry produces single mapping",
+          "language": "javascript",
+          "function": "buildRegistry",
+          "args": [[["home", "homepage.com"]]],
+          "expected": {"home": "homepage.com"}
+        },
+        {
+          "label": "single entry produces single mapping",
+          "language": "python",
+          "function": "build_registry",
+          "args": [[["home", "homepage.com"]]],
+          "expected": {"home": "homepage.com"}
+        },
+        {
+          "label": "retrieves value for registered code",
+          "language": "javascript",
+          "function": "lookupCode",
+          "args": [{"gh": "github.com", "gl": "gitlab.com"}, "gh"],
+          "expected": "github.com"
+        },
+        {
+          "label": "retrieves value for registered code",
+          "language": "python",
+          "function": "lookup_code",
+          "args": [{"gh": "github.com", "gl": "gitlab.com"}, "gh"],
+          "expected": "github.com"
+        },
+        {
+          "label": "returns null for unregistered code",
+          "language": "javascript",
+          "function": "lookupCode",
+          "args": [{"gh": "github.com"}, "xyz"],
+          "expected": null
+        },
+        {
+          "label": "returns null for unregistered code",
+          "language": "python",
+          "function": "lookup_code",
+          "args": [{"gh": "github.com"}, "xyz"],
+          "expected": null
+        },
+        {
+          "label": "retrieves empty string value for registered code",
+          "language": "javascript",
+          "function": "lookupCode",
+          "args": [{"empty": "", "ok": "value"}, "empty"],
+          "expected": ""
+        },
+        {
+          "label": "retrieves empty string value for registered code",
+          "language": "python",
+          "function": "lookup_code",
+          "args": [{"empty": "", "ok": "value"}, "empty"],
+          "expected": ""
         }
       ]
     },
@@ -93,32 +163,214 @@
       },
       "runInputs": [
         {
+          "label": "builds registry from multiple entries",
+          "language": "javascript",
+          "function": "buildRegistry",
+          "args": [[["gh", "github.com"], ["gl", "gitlab.com"], ["bb", "bitbucket.org"]]],
+          "expected": {"gh": "github.com", "gl": "gitlab.com", "bb": "bitbucket.org"}
+        },
+        {
+          "label": "builds registry from multiple entries",
+          "language": "python",
+          "function": "build_registry",
+          "args": [[["gh", "github.com"], ["gl", "gitlab.com"], ["bb", "bitbucket.org"]]],
+          "expected": {"gh": "github.com", "gl": "gitlab.com", "bb": "bitbucket.org"}
+        },
+        {
+          "label": "returns empty object for no entries",
+          "language": "javascript",
+          "function": "buildRegistry",
+          "args": [[]],
+          "expected": {}
+        },
+        {
+          "label": "returns empty object for no entries",
+          "language": "python",
+          "function": "build_registry",
+          "args": [[]],
+          "expected": {}
+        },
+        {
+          "label": "first occurrence wins for duplicate codes",
+          "language": "javascript",
+          "function": "buildRegistry",
+          "args": [[["api", "api.primary.com"], ["cdn", "cdn.example.com"], ["api", "api.fallback.com"]]],
+          "expected": {"api": "api.primary.com", "cdn": "cdn.example.com"}
+        },
+        {
+          "label": "first occurrence wins for duplicate codes",
+          "language": "python",
+          "function": "build_registry",
+          "args": [[["api", "api.primary.com"], ["cdn", "cdn.example.com"], ["api", "api.fallback.com"]]],
+          "expected": {"api": "api.primary.com", "cdn": "cdn.example.com"}
+        },
+        {
+          "label": "single entry produces single mapping",
+          "language": "javascript",
+          "function": "buildRegistry",
+          "args": [[["home", "homepage.com"]]],
+          "expected": {"home": "homepage.com"}
+        },
+        {
+          "label": "single entry produces single mapping",
+          "language": "python",
+          "function": "build_registry",
+          "args": [[["home", "homepage.com"]]],
+          "expected": {"home": "homepage.com"}
+        },
+        {
+          "label": "retrieves value for registered code",
+          "language": "javascript",
+          "function": "lookupCode",
+          "args": [{"gh": "github.com", "gl": "gitlab.com"}, "gh"],
+          "expected": "github.com"
+        },
+        {
+          "label": "retrieves value for registered code",
+          "language": "python",
+          "function": "lookup_code",
+          "args": [{"gh": "github.com", "gl": "gitlab.com"}, "gh"],
+          "expected": "github.com"
+        },
+        {
+          "label": "returns null for unregistered code",
+          "language": "javascript",
+          "function": "lookupCode",
+          "args": [{"gh": "github.com"}, "xyz"],
+          "expected": null
+        },
+        {
+          "label": "returns null for unregistered code",
+          "language": "python",
+          "function": "lookup_code",
+          "args": [{"gh": "github.com"}, "xyz"],
+          "expected": null
+        },
+        {
+          "label": "retrieves empty string value for registered code",
+          "language": "javascript",
+          "function": "lookupCode",
+          "args": [{"empty": "", "ok": "value"}, "empty"],
+          "expected": ""
+        },
+        {
+          "label": "retrieves empty string value for registered code",
+          "language": "python",
+          "function": "lookup_code",
+          "args": [{"empty": "", "ok": "value"}, "empty"],
+          "expected": ""
+        },
+        {
+          "label": "merges new entries into existing registry",
+          "language": "javascript",
+          "function": "bulkRegister",
+          "args": [{"gh": "github.com"}, [["gl", "gitlab.com"], ["bb", "bitbucket.org"]]],
+          "expected": {"registry": {"gh": "github.com", "gl": "gitlab.com", "bb": "bitbucket.org"}, "conflicts": []}
+        },
+        {
+          "label": "merges new entries into existing registry",
+          "language": "python",
+          "function": "bulk_register",
+          "args": [{"gh": "github.com"}, [["gl", "gitlab.com"], ["bb", "bitbucket.org"]]],
+          "expected": {"registry": {"gh": "github.com", "gl": "gitlab.com", "bb": "bitbucket.org"}, "conflicts": []}
+        },
+        {
           "label": "reports conflicting codes",
           "language": "javascript",
           "function": "bulkRegister",
-          "args": [{"gh": "github.com"}, [["gl", "gitlab.com"], ["gh", "github.io"]]],
-          "expected": {"registry": {"gh": "github.com", "gl": "gitlab.com"}, "conflicts": ["gh"]}
+          "args": [{"api": "api.original.com", "cdn": "cdn.original.com"}, [["api", "api.new.com"], ["web", "web.example.com"]]],
+          "expected": ["api"]
         },
         {
           "label": "reports conflicting codes",
           "language": "python",
           "function": "bulk_register",
-          "args": [{"gh": "github.com"}, [["gl", "gitlab.com"], ["gh", "github.io"]]],
-          "expected": {"registry": {"gh": "github.com", "gl": "gitlab.com"}, "conflicts": ["gh"]}
+          "args": [{"api": "api.original.com", "cdn": "cdn.original.com"}, [["api", "api.new.com"], ["web", "web.example.com"]]],
+          "expected": ["api"]
+        },
+        {
+          "label": "returns empty conflicts when no overlaps",
+          "language": "javascript",
+          "function": "bulkRegister",
+          "args": [{"gh": "github.com"}, [["gl", "gitlab.com"]]],
+          "expected": {"registry": {"gh": "github.com", "gl": "gitlab.com"}, "conflicts": []}
+        },
+        {
+          "label": "returns empty conflicts when no overlaps",
+          "language": "python",
+          "function": "bulk_register",
+          "args": [{"gh": "github.com"}, [["gl", "gitlab.com"]]],
+          "expected": {"registry": {"gh": "github.com", "gl": "gitlab.com"}, "conflicts": []}
+        },
+        {
+          "label": "empty additions returns original registry unchanged",
+          "language": "javascript",
+          "function": "bulkRegister",
+          "args": [{"x": "1", "y": "2"}, []],
+          "expected": {"registry": {"x": "1", "y": "2"}, "conflicts": []}
+        },
+        {
+          "label": "empty additions returns original registry unchanged",
+          "language": "python",
+          "function": "bulk_register",
+          "args": [{"x": "1", "y": "2"}, []],
+          "expected": {"registry": {"x": "1", "y": "2"}, "conflicts": []}
         },
         {
           "label": "empty base accepts all additions",
           "language": "javascript",
           "function": "bulkRegister",
-          "args": [{}, [["api", "api.example.com"], ["cdn", "cdn.example.com"]]],
-          "expected": {"registry": {"api": "api.example.com", "cdn": "cdn.example.com"}, "conflicts": []}
+          "args": [{}, [["a", "alpha"], ["b", "beta"]]],
+          "expected": {"registry": {"a": "alpha", "b": "beta"}, "conflicts": []}
         },
         {
           "label": "empty base accepts all additions",
           "language": "python",
           "function": "bulk_register",
-          "args": [{}, [["api", "api.example.com"], ["cdn", "cdn.example.com"]]],
-          "expected": {"registry": {"api": "api.example.com", "cdn": "cdn.example.com"}, "conflicts": []}
+          "args": [{}, [["a", "alpha"], ["b", "beta"]]],
+          "expected": {"registry": {"a": "alpha", "b": "beta"}, "conflicts": []}
+        },
+        {
+          "label": "handles multiple conflicts in one call",
+          "language": "javascript",
+          "function": "bulkRegister",
+          "args": [{"a": "1", "b": "2", "c": "3"}, [["a", "x"], ["b", "y"], ["d", "4"]]],
+          "expected": {"registry": {"a": "1", "b": "2", "c": "3", "d": "4"}, "conflicts": ["a", "b"]}
+        },
+        {
+          "label": "handles multiple conflicts in one call",
+          "language": "python",
+          "function": "bulk_register",
+          "args": [{"a": "1", "b": "2", "c": "3"}, [["a", "x"], ["b", "y"], ["d", "4"]]],
+          "expected": {"registry": {"a": "1", "b": "2", "c": "3", "d": "4"}, "conflicts": ["a", "b"]}
+        },
+        {
+          "label": "conflicts appear in encounter order",
+          "language": "javascript",
+          "function": "bulkRegister",
+          "args": [{"z": "1", "a": "2", "m": "3"}, [["m", "x"], ["z", "y"], ["a", "w"], ["new", "v"]]],
+          "expected": {"registry": {"z": "1", "a": "2", "m": "3", "new": "v"}, "conflicts": ["m", "z", "a"]}
+        },
+        {
+          "label": "conflicts appear in encounter order",
+          "language": "python",
+          "function": "bulk_register",
+          "args": [{"z": "1", "a": "2", "m": "3"}, [["m", "x"], ["z", "y"], ["a", "w"], ["new", "v"]]],
+          "expected": {"registry": {"z": "1", "a": "2", "m": "3", "new": "v"}, "conflicts": ["m", "z", "a"]}
+        },
+        {
+          "label": "reports conflict for duplicate within additions",
+          "language": "javascript",
+          "function": "bulkRegister",
+          "args": [{}, [["x", "first"], ["y", "yes"], ["x", "second"]]],
+          "expected": {"registry": {"x": "first", "y": "yes"}, "conflicts": ["x"]}
+        },
+        {
+          "label": "reports conflict for duplicate within additions",
+          "language": "python",
+          "function": "bulk_register",
+          "args": [{}, [["x", "first"], ["y", "yes"], ["x", "second"]]],
+          "expected": {"registry": {"x": "first", "y": "yes"}, "conflicts": ["x"]}
         }
       ]
     }
