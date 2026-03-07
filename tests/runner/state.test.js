@@ -13,14 +13,12 @@ describe("initialState", () => {
   });
 
   test("has run result fields initialized", () => {
-    expect(initialState.rawRunStdout).toBe("");
-    expect(initialState.rawRunStderr).toBe("");
     expect(initialState.lastRunAt).toBeNull();
-    expect(initialState.runTimedOut).toBe(false);
-    expect(initialState.runCrashed).toBe(false);
-    expect(initialState.runSkipped).toBe(false);
     expect(initialState.runOutput).toEqual([]);
     expect(initialState.testFailures).toEqual([]);
+    expect(initialState.testConsoleLogs).toEqual([]);
+    expect(initialState.testsPassed).toBe(0);
+    expect(initialState.testsTotal).toBe(0);
   });
 });
 
@@ -345,8 +343,6 @@ describe("reducer", () => {
       stderr: "",
       ranAt: "2026-03-05T00:00:00.000Z",
     });
-    expect(state.rawRunStdout).toBe("[test] \u2714 42\n");
-    expect(state.rawRunStderr).toBe("");
     expect(state.runOutput).toEqual([
       { type: "result", label: "test", passed: true, actual: "42" },
     ]);
@@ -362,7 +358,6 @@ describe("reducer", () => {
       ranAt: "2026-03-05T12:00:00.000Z",
     });
     expect(state.lastRunAt).toBe("2026-03-05T12:00:00.000Z");
-    expect(state.runTimedOut).toBe(true);
     expect(state.runOutput).toEqual([{ type: "timeout" }]);
   });
 
@@ -375,7 +370,6 @@ describe("reducer", () => {
       stderr: "fatal error\n",
       ranAt: "2026-03-05T12:00:00.000Z",
     });
-    expect(state.runCrashed).toBe(true);
     expect(state.runOutput[0]).toEqual({ type: "crashed" });
     expect(state.runOutput.length).toBeGreaterThan(1);
   });
@@ -387,7 +381,6 @@ describe("reducer", () => {
       skipped: true,
       ranAt: "2026-03-05T12:00:00.000Z",
     });
-    expect(state.runSkipped).toBe(true);
     expect(state.runOutput).toEqual([{ type: "skipped" }]);
   });
 
@@ -405,62 +398,72 @@ describe("reducer", () => {
 
   test("TEST_RESULT_RECEIVED clears watcherError", () => {
     const prev = { ...initialState, watcherError: "old error" };
-    const state = reducer(prev, { type: Action.TEST_RESULT_RECEIVED });
+    const state = reducer(prev, {
+      type: Action.TEST_RESULT_RECEIVED,
+      payload: { jestJson: null, pytestStdout: "", passed: 0, total: 0 },
+    });
     expect(state.watcherError).toBeNull();
   });
 
   test("TEST_RESULT_RECEIVED does not modify runOutput", () => {
     const existingOutput = [{ type: "result", label: "test", passed: true, actual: "42" }];
     const prev = { ...initialState, runOutput: existingOutput };
-    const state = reducer(prev, { type: Action.TEST_RESULT_RECEIVED });
+    const state = reducer(prev, {
+      type: Action.TEST_RESULT_RECEIVED,
+      payload: { jestJson: null, pytestStdout: "", passed: 0, total: 0 },
+    });
     expect(state.runOutput).toBe(existingOutput);
   });
 
-  test("TEST_RESULT_RECEIVED populates testFailures from jestJson", () => {
+  test("TEST_RESULT_RECEIVED with Jest JSON populates testFailures and testConsoleLogs", () => {
     const jestJson = JSON.stringify({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
           {
             status: "failed",
             title: "handles edge case",
-            failureMessages: ["expect(received).toEqual(expected)\n\nExpected: [1]\nReceived: [2]"],
+            failureMessages: ["Expected: [1]\nReceived: [2]"],
           },
+        ],
+        console: [
+          { message: "debug output", type: "log" },
         ],
       }],
     });
-    const prev = { ...initialState };
-    const state = reducer(prev, { type: Action.TEST_RESULT_RECEIVED, jestJson });
+    const state = reducer(initialState, {
+      type: Action.TEST_RESULT_RECEIVED,
+      payload: { jestJson, pytestStdout: null, passed: 3, total: 4 },
+    });
     expect(state.testFailures).toHaveLength(1);
     expect(state.testFailures[0].name).toBe("handles edge case");
     expect(state.testFailures[0].expected).toBe("[1]");
     expect(state.testFailures[0].received).toBe("[2]");
+    expect(state.testConsoleLogs).toEqual(["debug output"]);
+    expect(state.testsPassed).toBe(3);
+    expect(state.testsTotal).toBe(4);
   });
 
-  test("TEST_RESULT_RECEIVED testFailures is [] when all tests pass", () => {
-    const jestJson = JSON.stringify({
-      testResults: [{
-        testFilePath: "/test.js",
-        assertionResults: [
-          { status: "passed", title: "works", failureMessages: [] },
-        ],
-      }],
+  test("TEST_RESULT_RECEIVED with pytestStdout populates testFailures", () => {
+    const pytestStdout = [
+      "__________________ test_retrieves_value __________________",
+      "suite.test.py:13: in test_retrieves_value",
+      "    assert result == 'github.com'",
+      "E   AssertionError: assert None == 'github.com'",
+    ].join("\n");
+    const state = reducer(initialState, {
+      type: Action.TEST_RESULT_RECEIVED,
+      payload: { jestJson: null, pytestStdout, passed: 2, total: 3 },
     });
-    const prev = { ...initialState, testFailures: [{ name: "old" }] };
-    const state = reducer(prev, { type: Action.TEST_RESULT_RECEIVED, jestJson });
-    expect(state.testFailures).toEqual([]);
+    expect(state.testFailures).toHaveLength(1);
+    expect(state.testFailures[0].name).toBe("retrieves value");
+    expect(state.testFailures[0].received).toBe("None");
+    expect(state.testFailures[0].expected).toBe("'github.com'");
+    expect(state.testConsoleLogs).toEqual([]);
   });
 
-  test("TEST_RESULT_RECEIVED testFailures is [] when jestJson is null", () => {
-    const prev = { ...initialState, testFailures: [{ name: "old" }] };
-    const state = reducer(prev, { type: Action.TEST_RESULT_RECEIVED, jestJson: null });
-    expect(state.testFailures).toEqual([]);
-  });
-
-  test("TEST_RESULT_RECEIVED replaces testFailures entirely — not appended", () => {
+  test("TEST_RESULT_RECEIVED clears previous testFailures on new run", () => {
     const jestJson1 = JSON.stringify({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
           { status: "failed", title: "fail A", failureMessages: ["error A"] },
         ],
@@ -468,19 +471,44 @@ describe("reducer", () => {
     });
     const jestJson2 = JSON.stringify({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
           { status: "failed", title: "fail B", failureMessages: ["error B"] },
         ],
       }],
     });
-    const state1 = reducer(initialState, { type: Action.TEST_RESULT_RECEIVED, jestJson: jestJson1 });
+    const state1 = reducer(initialState, {
+      type: Action.TEST_RESULT_RECEIVED,
+      payload: { jestJson: jestJson1, pytestStdout: null, passed: 0, total: 1 },
+    });
     expect(state1.testFailures).toHaveLength(1);
     expect(state1.testFailures[0].name).toBe("fail A");
 
-    const state2 = reducer(state1, { type: Action.TEST_RESULT_RECEIVED, jestJson: jestJson2 });
+    const state2 = reducer(state1, {
+      type: Action.TEST_RESULT_RECEIVED,
+      payload: { jestJson: jestJson2, pytestStdout: null, passed: 0, total: 1 },
+    });
     expect(state2.testFailures).toHaveLength(1);
     expect(state2.testFailures[0].name).toBe("fail B");
+  });
+
+  test("testConsoleLogs is populated from Jest console output", () => {
+    const jestJson = JSON.stringify({
+      testResults: [{
+        assertionResults: [
+          { status: "passed", title: "test", failureMessages: [] },
+        ],
+        console: [
+          { message: "log line 1", type: "log" },
+          { message: "log line 2", type: "log" },
+        ],
+      }],
+    });
+    const state = reducer(initialState, {
+      type: Action.TEST_RESULT_RECEIVED,
+      payload: { jestJson, pytestStdout: null, passed: 1, total: 1 },
+    });
+    expect(state.testFailures).toEqual([]);
+    expect(state.testConsoleLogs).toEqual(["log line 1", "log line 2"]);
   });
 
   test("RUN_RESULT_RECEIVED does not modify testFailures", () => {
@@ -492,114 +520,6 @@ describe("reducer", () => {
       stderr: "",
     });
     expect(state.testFailures).toBe(existingFailures);
-  });
-
-  // --- Test result correlation ---
-
-  test("TEST_RESULT_RECEIVED with Jest JSON and runInputs populates correlated testFailures", () => {
-    const jestJson = JSON.stringify({
-      testResults: [{
-        testFilePath: "/test.js",
-        assertionResults: [
-          {
-            status: "failed",
-            title: "retrieves value",
-            failureMessages: ["expect(received).toEqual(expected)\n\nExpected: \"github.com\"\nReceived: null"],
-          },
-        ],
-      }],
-    });
-    const state = reducer(initialState, {
-      type: Action.TEST_RESULT_RECEIVED,
-      jestJson,
-      runInputs: [
-        { label: "retrieves value", language: "javascript", function: "lookupCode", args: [{ gh: "github.com" }, "gh"], expected: "github.com" },
-      ],
-      activeTests: ["retrieves value"],
-      language: "javascript",
-    });
-    expect(state.testFailures).toHaveLength(1);
-    expect(state.testFailures[0].runInputsMatched).toBe(true);
-    expect(state.testFailures[0].input).toBe('lookupCode({"gh":"github.com"}, "gh")');
-    expect(state.testFailures[0].expected).toBe('"github.com"');
-    expect(state.testFailures[0].received).toBe("null");
-  });
-
-  test("TEST_RESULT_RECEIVED with pytestStdout populates correlated testFailures", () => {
-    const pytestStdout = [
-      "__________________ test_retrieves_value __________________",
-      "suite.test.py:13: in test_retrieves_value",
-      "    assert result == 'github.com'",
-      "E   AssertionError: assert None == 'github.com'",
-      "=========================== short test summary info ===========================",
-      "FAILED suite.test.py::test_retrieves_value",
-    ].join("\n");
-    const state = reducer(initialState, {
-      type: Action.TEST_RESULT_RECEIVED,
-      jestJson: null,
-      pytestStdout,
-      runInputs: [
-        { label: "retrieves value", language: "python", function: "lookup_code", args: [{ gh: "github.com" }, "gh"], expected: "github.com" },
-      ],
-      activeTests: ["retrieves value"],
-      language: "python",
-    });
-    expect(state.testFailures).toHaveLength(1);
-    expect(state.testFailures[0].runInputsMatched).toBe(true);
-    expect(state.testFailures[0].input).toBe('lookup_code({"gh":"github.com"}, "gh")');
-    expect(state.testFailures[0].expected).toBe('"github.com"');
-    expect(state.testFailures[0].received).toBe("None");
-  });
-
-  test("TEST_RESULT_RECEIVED correlated entries for runInputsMatched true have non-null input and expected", () => {
-    const jestJson = JSON.stringify({
-      testResults: [{
-        testFilePath: "/test.js",
-        assertionResults: [
-          {
-            status: "failed",
-            title: "my test",
-            failureMessages: ["expect(received).toEqual(expected)\n\nExpected: 1\nReceived: 2"],
-          },
-        ],
-      }],
-    });
-    const state = reducer(initialState, {
-      type: Action.TEST_RESULT_RECEIVED,
-      jestJson,
-      runInputs: [{ label: "my test", language: "javascript", function: "fn", args: [42], expected: 1 }],
-      activeTests: ["my test"],
-      language: "javascript",
-    });
-    expect(state.testFailures[0].runInputsMatched).toBe(true);
-    expect(state.testFailures[0].input).not.toBeNull();
-    expect(state.testFailures[0].expected).not.toBeNull();
-  });
-
-  test("TEST_RESULT_RECEIVED entries for unmatched tests have runInputsMatched false", () => {
-    const jestJson = JSON.stringify({
-      testResults: [{
-        testFilePath: "/test.js",
-        assertionResults: [
-          {
-            status: "failed",
-            title: "unmatched test",
-            failureMessages: ["expect(received).toEqual(expected)\n\nExpected: 1\nReceived: 2"],
-          },
-        ],
-      }],
-    });
-    const state = reducer(initialState, {
-      type: Action.TEST_RESULT_RECEIVED,
-      jestJson,
-      runInputs: [{ label: "other test", language: "javascript", function: "fn", args: [1], expected: 1 }],
-      activeTests: ["other test"],
-      language: "javascript",
-    });
-    expect(state.testFailures[0].runInputsMatched).toBe(false);
-    // input comes from parseTestFailures code frame extraction (null here — no code frame in message)
-    expect(state.testFailures[0].expected).toBe("1");
-    expect(state.testFailures[0].received).toBe("2");
   });
 
   // --- RUN_TESTS ---

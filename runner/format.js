@@ -91,98 +91,69 @@ function truncate(str) {
 }
 
 /**
- * Parses Jest --json output into structured test failure objects.
- * Never throws — returns [] for null, invalid JSON, or no failures.
- *
- * @param {string|null} jestJsonString - raw JSON string from Jest --json output
- * @returns {Array<{name: string, input: string|null, expected: string|null, received: string|null}>}
+ * Extracts test results from Jest --json output.
+ * Returns: { failures: [{ name, expected, received }], consoleLogs: string[], passCount: number }
+ * Returns: { failures: [], consoleLogs: [], passCount: 0 } for null or unparseable input.
+ * Never throws.
  */
-export function parseTestFailures(jestJsonString) {
-  if (!jestJsonString) return [];
+export function extractJestResults(jestJsonString) {
+  if (!jestJsonString) return { failures: [], consoleLogs: [], passCount: 0 };
 
   let parsed;
   try {
     parsed = JSON.parse(jestJsonString);
   } catch {
-    return [];
+    return { failures: [], consoleLogs: [], passCount: 0 };
   }
 
   const failures = [];
+  let passCount = 0;
+  const consoleLogs = [];
 
   try {
     const testResults = parsed.testResults;
-    if (!Array.isArray(testResults)) return [];
+    if (!Array.isArray(testResults)) return { failures: [], consoleLogs: [], passCount: 0 };
 
     for (const suite of testResults) {
       const assertions = suite.assertionResults;
-      if (!Array.isArray(assertions)) continue;
+      if (Array.isArray(assertions)) {
+        for (const assertion of assertions) {
+          if (assertion.status === "passed") {
+            passCount++;
+            continue;
+          }
+          if (assertion.status !== "failed") continue;
 
-      for (const assertion of assertions) {
-        if (assertion.status !== "failed") continue;
+          const name = assertion.title || "unknown test";
+          let expected = null;
+          let received = null;
 
-        const name = assertion.title || "unknown test";
-        let input = null;
-        let expected = null;
-        let received = null;
-
-        const messages = assertion.failureMessages;
-        if (Array.isArray(messages) && messages.length > 0) {
-          const msg = messages[0];
-
-          // Extract Expected: line
-          const expectedMatch = msg.match(/^Expected: (.+)$/m);
-          if (expectedMatch) {
-            expected = truncate(expectedMatch[1]);
+          const messages = assertion.failureMessages;
+          if (Array.isArray(messages) && messages.length > 0) {
+            const msg = messages[0];
+            const expectedMatch = msg.match(/^\s*Expected(?:[^:]*)?:\s*(.+)$/m);
+            const receivedMatch = msg.match(/^\s*Received(?:[^:]*)?:\s*(.+)$/m);
+            if (expectedMatch) expected = truncate(expectedMatch[1]);
+            if (receivedMatch) received = truncate(receivedMatch[1]);
           }
 
-          // Extract Received: line
-          const receivedMatch = msg.match(/^Received: (.+)$/m);
-          if (receivedMatch) {
-            received = truncate(receivedMatch[1]);
-          }
+          failures.push({ name, expected, received });
+        }
+      }
 
-          // Extract input from the assertion call line (the one with ^ pointer below it)
-          // Jest formats code frames as: "   9 |     expect(...).toEqual(...)"
-          // with the caret line as:       "     |     ^"
-          // After the "| " prefix, the caret appears.
-          const lines = msg.split("\n");
-          for (let i = 0; i < lines.length - 1; i++) {
-            const line = lines[i];
-            const nextLine = lines[i + 1];
-            // The caret line has format: "     |     ^" — strip the "| " prefix before checking
-            const afterPipe = nextLine.includes("|") ? nextLine.slice(nextLine.indexOf("|") + 1) : nextLine;
-            if (afterPipe.trim().startsWith("^") && line.includes("expect(")) {
-              // Extract the argument to the outermost function call inside expect()
-              const expectIdx = line.indexOf("expect(");
-              if (expectIdx !== -1) {
-                const afterExpect = line.slice(expectIdx + 7); // after "expect("
-                // Find the matching closing paren for expect(...)
-                let depth = 1;
-                let endIdx = -1;
-                for (let c = 0; c < afterExpect.length; c++) {
-                  if (afterExpect[c] === "(") depth++;
-                  else if (afterExpect[c] === ")") {
-                    depth--;
-                    if (depth === 0) { endIdx = c; break; }
-                  }
-                }
-                if (endIdx > 0) {
-                  input = truncate(afterExpect.slice(0, endIdx));
-                }
-              }
-              break;
-            }
+      if (Array.isArray(suite.console)) {
+        for (const entry of suite.console) {
+          if (entry.type === "log") {
+            consoleLogs.push(truncate(entry.message));
           }
         }
-
-        failures.push({ name, input, expected, received });
       }
     }
   } catch {
     // Partial results are fine
   }
 
-  return failures;
+  return { failures, consoleLogs, passCount };
 }
 
 /**
@@ -252,93 +223,33 @@ export function formatRunOutput(stdout, stderr) {
 }
 
 /**
- * Correlates failed test names against runInputs and activeTests from problem.json.
- * Uses three-tier matching:
- *   Tier 1 — exact label match between activeTests entry and runInputs label
- *   Tier 2 — index match when language-filtered runInputs length equals activeTests length
- *   Tier 3 — no match (fallback to test runner output)
- *
- * @param {string[]} failedTestNames - test names that failed
- * @param {object[]|null} runInputs - runInputs array from current part
- * @param {string[]|null} activeTests - activeTests array from current part
- * @param {string} language - "javascript" or "python"
- * @returns {Array<{name: string, input: string|null, expected: string|null, runInputsMatched: boolean, matchTier: number}>}
- */
-export function correlateTestFailures(failedTestNames, runInputs, activeTests, language) {
-  if (!failedTestNames || failedTestNames.length === 0) return [];
-
-  const noMatch = (name) => ({ name, input: null, expected: null, runInputsMatched: false, matchTier: 3 });
-
-  const hasActiveTests = activeTests && Array.isArray(activeTests);
-  const hasRunInputs = runInputs && Array.isArray(runInputs);
-
-  // Pre-filter runInputs by language for Tier 2 length comparison
-  const langFiltered = hasRunInputs ? runInputs.filter((ri) => ri.language === language) : [];
-  const indexAligned = hasActiveTests && langFiltered.length === activeTests.length;
-
-  return failedTestNames.map((name) => {
-    if (!hasActiveTests) return noMatch(name);
-
-    const activeIdx = activeTests.indexOf(name);
-    if (activeIdx === -1) return noMatch(name);
-
-    if (!hasRunInputs) return noMatch(name);
-
-    // Tier 1: exact label match
-    const labelMatch = runInputs.find(
-      (ri) => ri.label === activeTests[activeIdx] && ri.language === language
-    );
-    if (labelMatch) {
-      return formatRunInput(name, labelMatch, 1);
-    }
-
-    // Tier 2: index match (only when arrays are the same length)
-    if (indexAligned) {
-      const indexMatch = langFiltered[activeIdx];
-      if (indexMatch) {
-        return formatRunInput(name, indexMatch, 2);
-      }
-    }
-
-    // Tier 3: no match
-    return noMatch(name);
-  });
-}
-
-function formatRunInput(name, runInput, matchTier) {
-  const input = truncate(
-    `${runInput.function}(${runInput.args.map((a) => JSON.stringify(a)).join(", ")})`
-  );
-  const expected = truncate(JSON.stringify(runInput.expected));
-  return { name, input, expected, runInputsMatched: true, matchTier };
-}
-
-/**
- * Parses pytest --tb=short stdout into structured test failure objects.
- * Never throws — returns [] for null or unparseable input.
- *
- * Pytest --tb=short failure format (observed):
- *   __________________ test_name __________________
+ * Extracts test results from pytest --tb=short stdout.
+ * Pytest --tb=short output format:
+ *   test_file.py::test_name PASSED
+ *   test_file.py::test_name FAILED
+ *   ___ test_name ___
  *   file.py:N: in test_name
  *       assert result == expected
  *   E   AssertionError: assert None == {'key': 'value'}
- *   — or without AssertionError prefix: —
- *   E   assert None == {}
  *
- * FAILED lines at bottom:
- *   FAILED file.py::test_name
- *
- * @param {string|null} pytestStdout - raw pytest stdout
- * @returns {Array<{name: string, received: string|null, expected: string|null}>}
+ * Returns: { failures: [{ name, expected, received }], consoleLogs: string[], passCount: number }
+ * Returns: { failures: [], consoleLogs: [], passCount: 0 } for null or empty input.
+ * Never throws.
  */
-export function parsePytestFailures(pytestStdout) {
-  if (!pytestStdout) return [];
+export function extractPytestResults(pytestStdout) {
+  if (!pytestStdout) return { failures: [], consoleLogs: [], passCount: 0 };
 
   const lines = pytestStdout.split("\n");
   const failures = [];
+  let passCount = 0;
   let currentTestName = null;
 
   for (const line of lines) {
+    if (/\sPASSED/.test(line)) {
+      passCount++;
+      continue;
+    }
+
     // Test failure header: "_______ test_name _______"
     const headerMatch = line.match(/^_{3,}\s+(\S+)\s+_{3,}$/);
     if (headerMatch) {
@@ -383,7 +294,7 @@ export function parsePytestFailures(pytestStdout) {
     }
   }
 
-  return failures;
+  return { failures, consoleLogs: [], passCount };
 }
 
 /**

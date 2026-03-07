@@ -358,14 +358,10 @@ export function startWatching(problem, language, rootDir, config, startPart, tim
           unlocked: currentPart + 1,
         };
         if (callbacks.onTestResult) {
-          const langKey = language === "JavaScript" ? "javascript" : "python";
           callbacks.onTestResult({
             ...result,
             timestamp: lastTimestamp,
             partInfo: lastPartInfo,
-            activeTests: config.parts[currentPart].activeTests,
-            runInputs: config.parts[currentPart].runInputs || null,
-            language: langKey,
           });
         }
 

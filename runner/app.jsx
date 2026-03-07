@@ -173,6 +173,7 @@ export default function App({ rootDir }) {
           lastRunAt={state.lastRunAt}
           showLogs={state.showLogs}
           testFailures={state.testFailures}
+          testConsoleLogs={state.testConsoleLogs}
           rootDir={rootDir}
         />
       );

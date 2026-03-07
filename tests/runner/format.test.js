@@ -5,9 +5,8 @@ import {
   formatGlobalStats,
   formatProblemStats,
   formatRunOutput,
-  parseTestFailures,
-  correlateTestFailures,
-  parsePytestFailures,
+  extractJestResults,
+  extractPytestResults,
 } from "../../runner/format.js";
 
 // Strip ANSI escape codes for content assertions
@@ -297,542 +296,244 @@ describe("formatRunOutput", () => {
   });
 });
 
-// --- parseTestFailures ---
+// --- extractJestResults ---
 
-function makeJestJson({ testResults }) {
-  return JSON.stringify({ testResults, numPassedTests: 0, numFailedTests: 1 });
+function makeJestJson(overrides = {}) {
+  return JSON.stringify({ testResults: [], ...overrides });
 }
 
-function makeFailureMessage({ expected, received, callLine }) {
-  const lines = [
-    "expect(received).toEqual(expected)",
-    "",
-    `Expected: ${expected}`,
-    `Received: ${received}`,
-    "",
-    "   8 |   test(\"test name\", () => {",
-  ];
-  if (callLine) {
-    lines.push(`   9 |     ${callLine}`);
-    lines.push("     |     ^");
-  }
-  lines.push("  10 |   });");
-  return lines.join("\n");
-}
-
-describe("parseTestFailures", () => {
-  test("returns [] for null input", () => {
-    expect(parseTestFailures(null)).toEqual([]);
+describe("extractJestResults", () => {
+  test("returns empty result for null input", () => {
+    expect(extractJestResults(null)).toEqual({ failures: [], consoleLogs: [], passCount: 0 });
   });
 
-  test("returns [] for invalid JSON string", () => {
-    expect(parseTestFailures("not valid json {{")).toEqual([]);
+  test("returns empty result for invalid JSON", () => {
+    expect(extractJestResults("not valid json {{")).toEqual({ failures: [], consoleLogs: [], passCount: 0 });
   });
 
-  test("returns [] for valid Jest JSON with no failures", () => {
-    const json = JSON.stringify({
-      testResults: [{
-        testFilePath: "/test.js",
-        assertionResults: [
-          { status: "passed", title: "works", failureMessages: [] },
-        ],
-      }],
-    });
-    expect(parseTestFailures(json)).toEqual([]);
-  });
-
-  test("returns correct failure object for single failing test with all fields", () => {
-    const msg = makeFailureMessage({
-      expected: "[0, 1, 1]",
-      received: "[0, 0, 1]",
-      callLine: 'expect(assignRooms([[0,30],[5,10]], [[7,10]])).toEqual([0,1,1])',
-    });
+  test("extracts name from title for failed assertions", () => {
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "handles many rooms", failureMessages: [msg] },
+          { status: "failed", title: "handles edge case", failureMessages: ["Expected: 1\nReceived: 2"] },
         ],
       }],
     });
-    const result = parseTestFailures(json);
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("handles many rooms");
-    expect(result[0].expected).toBe("[0, 1, 1]");
-    expect(result[0].received).toBe("[0, 0, 1]");
-    expect(result[0].input).toBe("assignRooms([[0,30],[5,10]], [[7,10]])");
+    const result = extractJestResults(json);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].name).toBe("handles edge case");
   });
 
-  test("extracts name correctly from assertionResults.title", () => {
-    const msg = makeFailureMessage({ expected: "1", received: "2", callLine: null });
+  test("extracts expected and received from standard Expected:/Received: lines", () => {
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "returns null when no room available", failureMessages: [msg] },
+          { status: "failed", title: "test", failureMessages: ["Expected: [1, 2]\nReceived: [3, 4]"] },
         ],
       }],
     });
-    const result = parseTestFailures(json);
-    expect(result[0].name).toBe("returns null when no room available");
+    const result = extractJestResults(json);
+    expect(result.failures[0].expected).toBe("[1, 2]");
+    expect(result.failures[0].received).toBe("[3, 4]");
   });
 
-  test("extracts expected from Expected: line in failure message", () => {
-    const msg = makeFailureMessage({ expected: '["B"]', received: '["A"]', callLine: null });
+  test("extracts expected from Expected length: variant", () => {
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "test", failureMessages: [msg] },
+          { status: "failed", title: "test", failureMessages: ["  Expected length: 3\n  Received length: 5"] },
         ],
       }],
     });
-    expect(parseTestFailures(json)[0].expected).toBe('["B"]');
+    const result = extractJestResults(json);
+    expect(result.failures[0].expected).toBe("3");
+    expect(result.failures[0].received).toBe("5");
   });
 
-  test("extracts received from Received: line in failure message", () => {
-    const msg = makeFailureMessage({ expected: "true", received: "false", callLine: null });
+  test("sets expected to null when no Expected line present", () => {
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "test", failureMessages: [msg] },
+          { status: "failed", title: "test", failureMessages: ["some error without expected/received"] },
         ],
       }],
     });
-    expect(parseTestFailures(json)[0].received).toBe("false");
+    const result = extractJestResults(json);
+    expect(result.failures[0].expected).toBeNull();
   });
 
-  test("extracts input from the assertion call line", () => {
-    const msg = makeFailureMessage({
-      expected: "[1]",
-      received: "[2]",
-      callLine: 'expect(mod.findRooms(rooms, bookings, requests)).toEqual([1])',
-    });
+  test("sets received to null when no Received line present", () => {
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "test", failureMessages: [msg] },
+          { status: "failed", title: "test", failureMessages: ["Expected: 1\nno received line here"] },
         ],
       }],
     });
-    expect(parseTestFailures(json)[0].input).toBe("mod.findRooms(rooms, bookings, requests)");
+    const result = extractJestResults(json);
+    expect(result.failures[0].received).toBeNull();
   });
 
-  test("returns input: null when assertion call line is not parseable", () => {
-    const msg = makeFailureMessage({ expected: "1", received: "2", callLine: null });
+  test("increments passCount for each passed assertion", () => {
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "test", failureMessages: [msg] },
+          { status: "passed", title: "test one", failureMessages: [] },
+          { status: "passed", title: "test two", failureMessages: [] },
+          { status: "failed", title: "test three", failureMessages: ["Expected: 1\nReceived: 2"] },
         ],
       }],
     });
-    expect(parseTestFailures(json)[0].input).toBeNull();
+    const result = extractJestResults(json);
+    expect(result.passCount).toBe(2);
+    expect(result.failures).toHaveLength(1);
   });
 
-  test("handles multiple failing tests — returns one object per failure", () => {
-    const msg1 = makeFailureMessage({ expected: "1", received: "2", callLine: null });
-    const msg2 = makeFailureMessage({ expected: "3", received: "4", callLine: null });
+  test("extracts console log messages into consoleLogs array", () => {
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "test one", failureMessages: [msg1] },
-          { status: "failed", title: "test two", failureMessages: [msg2] },
+          { status: "passed", title: "test", failureMessages: [] },
+        ],
+        console: [
+          { message: "debug info", type: "log" },
+          { message: "more debug", type: "log" },
+          { message: "warning!", type: "warn" },
         ],
       }],
     });
-    const result = parseTestFailures(json);
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe("test one");
-    expect(result[1].name).toBe("test two");
+    const result = extractJestResults(json);
+    expect(result.consoleLogs).toEqual(["debug info", "more debug"]);
   });
 
-  test("ignores passing tests — only failing assertions in output", () => {
-    const msg = makeFailureMessage({ expected: "1", received: "2", callLine: null });
+  test("returns consoleLogs [] when no console output present", () => {
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "passed", title: "passes", failureMessages: [] },
-          { status: "failed", title: "fails", failureMessages: [msg] },
-          { status: "passed", title: "also passes", failureMessages: [] },
+          { status: "passed", title: "test", failureMessages: [] },
         ],
       }],
     });
-    const result = parseTestFailures(json);
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("fails");
+    const result = extractJestResults(json);
+    expect(result.consoleLogs).toEqual([]);
   });
 
-  test("truncates input at 200 chars with ellipsis", () => {
-    const longInput = "x".repeat(250);
-    const msg = makeFailureMessage({
-      expected: "1",
-      received: "2",
-      callLine: `expect(fn(${longInput})).toEqual(1)`,
-    });
-    const json = makeJestJson({
-      testResults: [{
-        testFilePath: "/test.js",
-        assertionResults: [
-          { status: "failed", title: "test", failureMessages: [msg] },
-        ],
-      }],
-    });
-    const result = parseTestFailures(json);
-    expect(result[0].input.length).toBe(201);
-    expect(result[0].input.endsWith("\u2026")).toBe(true);
-  });
-
-  test("truncates expected at 200 chars with ellipsis", () => {
+  test("truncates expected at 200 chars", () => {
     const longExpected = "y".repeat(250);
-    const msg = makeFailureMessage({ expected: longExpected, received: "2", callLine: null });
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "test", failureMessages: [msg] },
+          { status: "failed", title: "test", failureMessages: [`Expected: ${longExpected}\nReceived: 2`] },
         ],
       }],
     });
-    const result = parseTestFailures(json);
-    expect(result[0].expected.length).toBe(201);
-    expect(result[0].expected.endsWith("\u2026")).toBe(true);
+    const result = extractJestResults(json);
+    expect(result.failures[0].expected.length).toBe(201);
+    expect(result.failures[0].expected.endsWith("\u2026")).toBe(true);
   });
 
-  test("truncates received at 200 chars with ellipsis", () => {
+  test("truncates received at 200 chars", () => {
     const longReceived = "z".repeat(250);
-    const msg = makeFailureMessage({ expected: "1", received: longReceived, callLine: null });
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
         assertionResults: [
-          { status: "failed", title: "test", failureMessages: [msg] },
+          { status: "failed", title: "test", failureMessages: [`Expected: 1\nReceived: ${longReceived}`] },
         ],
       }],
     });
-    const result = parseTestFailures(json);
-    expect(result[0].received.length).toBe(201);
-    expect(result[0].received.endsWith("\u2026")).toBe(true);
+    const result = extractJestResults(json);
+    expect(result.failures[0].received.length).toBe(201);
+    expect(result.failures[0].received.endsWith("\u2026")).toBe(true);
   });
 
-  test("does not throw on malformed failure message — returns partial result", () => {
+  test("truncates console log messages at 200 chars", () => {
+    const longMsg = "a".repeat(250);
     const json = makeJestJson({
       testResults: [{
-        testFilePath: "/test.js",
-        assertionResults: [
-          { status: "failed", title: "broken test", failureMessages: ["totally unexpected format"] },
-        ],
+        assertionResults: [],
+        console: [{ message: longMsg, type: "log" }],
       }],
     });
-    const result = parseTestFailures(json);
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("broken test");
-    expect(result[0].expected).toBeNull();
-    expect(result[0].received).toBeNull();
-    expect(result[0].input).toBeNull();
+    const result = extractJestResults(json);
+    expect(result.consoleLogs[0].length).toBe(201);
+    expect(result.consoleLogs[0].endsWith("\u2026")).toBe(true);
+  });
+
+  test("does not throw for malformed input", () => {
+    expect(() => extractJestResults("{}")).not.toThrow();
+    expect(() => extractJestResults('{"testResults": "not an array"}')).not.toThrow();
+    expect(() => extractJestResults('{"testResults": [{"assertionResults": "bad"}]}')).not.toThrow();
   });
 });
 
-// --- correlateTestFailures ---
+// --- extractPytestResults ---
 
-describe("correlateTestFailures", () => {
-  const activeTests = [
-    "retrieves value for registered code",
-    "returns null for unregistered code",
-    "builds registry from entries",
-  ];
-  const runInputs = [
-    {
-      label: "retrieves value for registered code",
-      language: "javascript",
-      function: "lookupCode",
-      args: [{ gh: "github.com", gl: "gitlab.com" }, "gh"],
-      expected: "github.com",
-    },
-    {
-      label: "retrieves value for registered code",
-      language: "python",
-      function: "lookup_code",
-      args: [{ gh: "github.com", gl: "gitlab.com" }, "gh"],
-      expected: "github.com",
-    },
-    {
-      label: "returns null for unregistered code",
-      language: "javascript",
-      function: "lookupCode",
-      args: [{ gh: "github.com" }, "xyz"],
-      expected: null,
-    },
-  ];
-
-  test("returns matched entry with formatted function call string", () => {
-    const result = correlateTestFailures(
-      ["retrieves value for registered code"],
-      runInputs,
-      activeTests,
-      "javascript"
-    );
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("retrieves value for registered code");
-    expect(result[0].input).toBe('lookupCode({"gh":"github.com","gl":"gitlab.com"}, "gh")');
-    expect(result[0].expected).toBe('"github.com"');
-    expect(result[0].runInputsMatched).toBe(true);
+describe("extractPytestResults", () => {
+  test("returns empty result for null input", () => {
+    expect(extractPytestResults(null)).toEqual({ failures: [], consoleLogs: [], passCount: 0 });
   });
 
-  test("formats multi-argument function call correctly", () => {
-    const result = correlateTestFailures(
-      ["returns null for unregistered code"],
-      runInputs,
-      activeTests,
-      "javascript"
-    );
-    expect(result[0].input).toBe('lookupCode({"gh":"github.com"}, "xyz")');
-    expect(result[0].expected).toBe("null");
-    expect(result[0].runInputsMatched).toBe(true);
+  test("returns empty result for empty string", () => {
+    expect(extractPytestResults("")).toEqual({ failures: [], consoleLogs: [], passCount: 0 });
   });
 
-  test("formats object argument correctly via JSON.stringify", () => {
-    const ri = [{
-      label: "test",
-      language: "javascript",
-      function: "fn",
-      args: [{ a: 1, b: [2, 3] }],
-      expected: true,
-    }];
-    const result = correlateTestFailures(["test"], ri, ["test"], "javascript");
-    expect(result[0].input).toBe('fn({"a":1,"b":[2,3]})');
-    expect(result[0].expected).toBe("true");
-  });
-
-  test("filters runInputs by language — javascript entry not matched for python", () => {
-    const result = correlateTestFailures(
-      ["returns null for unregistered code"],
-      runInputs,
-      activeTests,
-      "python"
-    );
-    // "returns null for unregistered code" has no python runInput, and array lengths differ
-    expect(result[0].runInputsMatched).toBe(false);
-    expect(result[0].input).toBeNull();
-    expect(result[0].matchTier).toBe(3);
-  });
-
-  test("returns runInputsMatched false for test name not in activeTests", () => {
-    const result = correlateTestFailures(
-      ["unknown test name"],
-      runInputs,
-      activeTests,
-      "javascript"
-    );
-    expect(result[0].runInputsMatched).toBe(false);
-    expect(result[0].input).toBeNull();
-    expect(result[0].expected).toBeNull();
-    expect(result[0].matchTier).toBe(3);
-  });
-
-  test("returns runInputsMatched false for test name in activeTests but no matching runInputs label", () => {
-    const result = correlateTestFailures(
-      ["builds registry from entries"],
-      runInputs,
-      activeTests,
-      "javascript"
-    );
-    expect(result[0].runInputsMatched).toBe(false);
-  });
-
-  test("truncates input at 200 chars with ellipsis", () => {
-    const longArg = "x".repeat(250);
-    const ri = [{
-      label: "test",
-      language: "javascript",
-      function: "fn",
-      args: [longArg],
-      expected: 1,
-    }];
-    const result = correlateTestFailures(["test"], ri, ["test"], "javascript");
-    expect(result[0].input.length).toBe(201);
-    expect(result[0].input.endsWith("\u2026")).toBe(true);
-  });
-
-  test("truncates expected at 200 chars with ellipsis", () => {
-    const longExpected = "y".repeat(250);
-    const ri = [{
-      label: "test",
-      language: "javascript",
-      function: "fn",
-      args: [1],
-      expected: longExpected,
-    }];
-    const result = correlateTestFailures(["test"], ri, ["test"], "javascript");
-    expect(result[0].expected.length).toBe(201);
-    expect(result[0].expected.endsWith("\u2026")).toBe(true);
-  });
-
-  test("handles empty failedTestNames — returns []", () => {
-    expect(correlateTestFailures([], runInputs, activeTests, "javascript")).toEqual([]);
-  });
-
-  test("handles null runInputs — returns entries with runInputsMatched false", () => {
-    const result = correlateTestFailures(
-      ["retrieves value for registered code"],
-      null,
-      activeTests,
-      "javascript"
-    );
-    expect(result[0].runInputsMatched).toBe(false);
-  });
-
-  test("handles null activeTests — returns entries with runInputsMatched false", () => {
-    const result = correlateTestFailures(
-      ["retrieves value for registered code"],
-      runInputs,
-      null,
-      "javascript"
-    );
-    expect(result[0].runInputsMatched).toBe(false);
-  });
-
-  test("does not throw for any null/undefined input", () => {
-    expect(() => correlateTestFailures(null, null, null, "javascript")).not.toThrow();
-    expect(() => correlateTestFailures(undefined, undefined, undefined, undefined)).not.toThrow();
-    expect(correlateTestFailures(null, null, null, "javascript")).toEqual([]);
-  });
-
-  // --- Tier-specific tests ---
-
-  test("Tier 1 match used when label matches exactly — matchTier 1", () => {
-    const result = correlateTestFailures(
-      ["retrieves value for registered code"],
-      runInputs,
-      activeTests,
-      "javascript"
-    );
-    expect(result[0].matchTier).toBe(1);
-    expect(result[0].runInputsMatched).toBe(true);
-  });
-
-  test("Tier 2 match used when label does not match but arrays are same length — matchTier 2", () => {
-    // 3 activeTests, 3 language-filtered runInputs (labels differ)
-    const at = ["test A", "test B", "test C"];
-    const ri = [
-      { label: "scenario X", language: "javascript", function: "fn", args: [1], expected: 10 },
-      { label: "scenario Y", language: "javascript", function: "fn", args: [2], expected: 20 },
-      { label: "scenario Z", language: "javascript", function: "fn", args: [3], expected: 30 },
-    ];
-    const result = correlateTestFailures(["test B"], ri, at, "javascript");
-    expect(result[0].matchTier).toBe(2);
-    expect(result[0].runInputsMatched).toBe(true);
-    expect(result[0].input).toBe("fn(2)");
-    expect(result[0].expected).toBe("20");
-  });
-
-  test("Tier 2 skipped when language-filtered runInputs length differs from activeTests length — falls to Tier 3", () => {
-    // 3 activeTests, but only 2 javascript runInputs (lengths differ)
-    const at = ["test A", "test B", "test C"];
-    const ri = [
-      { label: "scenario X", language: "javascript", function: "fn", args: [1], expected: 10 },
-      { label: "scenario Y", language: "javascript", function: "fn", args: [2], expected: 20 },
-    ];
-    const result = correlateTestFailures(["test B"], ri, at, "javascript");
-    expect(result[0].matchTier).toBe(3);
-    expect(result[0].runInputsMatched).toBe(false);
-    expect(result[0].input).toBeNull();
-  });
-
-  test("Tier 3 returned when neither label nor index match is valid — runInputsMatched false", () => {
-    const result = correlateTestFailures(
-      ["unknown test"],
-      runInputs,
-      activeTests,
-      "javascript"
-    );
-    expect(result[0].runInputsMatched).toBe(false);
-    expect(result[0].matchTier).toBe(3);
-    expect(result[0].input).toBeNull();
-    expect(result[0].expected).toBeNull();
-  });
-
-  test("Tier 1 takes priority over Tier 2 even when index would also produce a valid match", () => {
-    // Label matches for test A at index 0, so Tier 1 should be used even though
-    // arrays are same length (Tier 2 would also work)
-    const at = ["test A", "test B"];
-    const ri = [
-      { label: "test A", language: "javascript", function: "fn", args: [1], expected: 10 },
-      { label: "test B", language: "javascript", function: "fn", args: [2], expected: 20 },
-    ];
-    const result = correlateTestFailures(["test A"], ri, at, "javascript");
-    expect(result[0].matchTier).toBe(1);
-    expect(result[0].runInputsMatched).toBe(true);
-  });
-
-  test("matchTier field is present on every returned object", () => {
-    const at = ["test A", "test B"];
-    const ri = [
-      { label: "test A", language: "javascript", function: "fn", args: [1], expected: 10 },
-      { label: "other", language: "javascript", function: "fn", args: [2], expected: 20 },
-    ];
-    const result = correlateTestFailures(["test A", "test B", "unknown"], ri, at, "javascript");
-    expect(result).toHaveLength(3);
-    for (const entry of result) {
-      expect(entry).toHaveProperty("matchTier");
-      expect([1, 2, 3]).toContain(entry.matchTier);
-    }
-  });
-});
-
-// --- parsePytestFailures ---
-
-describe("parsePytestFailures", () => {
-  test("returns [] for null input", () => {
-    expect(parsePytestFailures(null)).toEqual([]);
-  });
-
-  test("returns [] for empty string", () => {
-    expect(parsePytestFailures("")).toEqual([]);
-  });
-
-  test("extracts test name and values from AssertionError line", () => {
+  test("extracts test name from FAILED line, strips test_ prefix, replaces _ with spaces", () => {
     const stdout = [
-      "__________________ test_builds_registry __________________",
-      "suite.test.py:13: in test_builds_registry",
-      '    assert result == {"gh": "github.com"}',
+      "__________________ test_builds_registry_from_entries __________________",
+      "suite.test.py:13: in test_builds_registry_from_entries",
+      "    assert result == expected",
       "E   AssertionError: assert None == {'gh': 'github.com'}",
     ].join("\n");
-    const result = parsePytestFailures(stdout);
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("builds registry");
-    expect(result[0].received).toBe("None");
-    expect(result[0].expected).toBe("{'gh': 'github.com'}");
+    const result = extractPytestResults(stdout);
+    expect(result.failures).toHaveLength(1);
+    expect(result.failures[0].name).toBe("builds registry from entries");
   });
 
-  test("extracts from assert line without AssertionError prefix", () => {
+  test("increments passCount for PASSED lines", () => {
     const stdout = [
-      "__________________ test_returns_empty __________________",
-      "suite.test.py:18: in test_returns_empty",
-      "    assert build_registry([]) == {}",
-      "E   assert None == {}",
+      "suite.test.py::test_case_one PASSED",
+      "suite.test.py::test_case_two PASSED",
+      "suite.test.py::test_case_three PASSED",
     ].join("\n");
-    const result = parsePytestFailures(stdout);
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe("returns empty");
-    expect(result[0].received).toBe("None");
-    expect(result[0].expected).toBe("{}");
+    const result = extractPytestResults(stdout);
+    expect(result.passCount).toBe(3);
+    expect(result.failures).toHaveLength(0);
   });
 
-  test("strips test_ prefix and replaces underscores with spaces in name", () => {
+  test("extracts expected and received from E AssertionError: assert X == Y line", () => {
     const stdout = [
-      "__________________ test_first_occurrence_wins __________________",
-      "suite.test.py:24: in test_first_occurrence_wins",
-      "    assert result == expected",
-      "E   AssertionError: assert None == {'api': 'primary'}",
+      "__________________ test_returns_value __________________",
+      "suite.test.py:13: in test_returns_value",
+      "    assert result == 'github.com'",
+      "E   AssertionError: assert None == 'github.com'",
     ].join("\n");
-    const result = parsePytestFailures(stdout);
-    expect(result[0].name).toBe("first occurrence wins");
+    const result = extractPytestResults(stdout);
+    expect(result.failures[0].received).toBe("None");
+    expect(result.failures[0].expected).toBe("'github.com'");
+  });
+
+  test("sets both to null when no == in assertion line", () => {
+    const stdout = [
+      "__________________ test_raises_error __________________",
+      "suite.test.py:20: in test_raises_error",
+      "    assert result",
+      "E   AssertionError",
+    ].join("\n");
+    const result = extractPytestResults(stdout);
+    expect(result.failures[0].received).toBeNull();
+    expect(result.failures[0].expected).toBeNull();
+  });
+
+  test("falls back to FAILED summary lines when no block headers present", () => {
+    const stdout = [
+      "FAILED suite.test.py::test_builds_registry_from_entries",
+      "FAILED suite.test.py::test_returns_null",
+    ].join("\n");
+    const result = extractPytestResults(stdout);
+    expect(result.failures).toHaveLength(2);
+    expect(result.failures[0].name).toBe("builds registry from entries");
+    expect(result.failures[1].name).toBe("returns null");
+    expect(result.failures[0].received).toBeNull();
   });
 
   test("handles multiple failures", () => {
@@ -846,22 +547,21 @@ describe("parsePytestFailures", () => {
       "    assert fn() == 2",
       "E   AssertionError: assert 0 == 2",
     ].join("\n");
-    const result = parsePytestFailures(stdout);
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe("case one");
-    expect(result[1].name).toBe("case two");
+    const result = extractPytestResults(stdout);
+    expect(result.failures).toHaveLength(2);
+    expect(result.failures[0].name).toBe("case one");
+    expect(result.failures[1].name).toBe("case two");
   });
 
-  test("falls back to FAILED summary lines when no headers found", () => {
-    const stdout = [
-      "FAILED suite.test.py::test_builds_registry_from_entries",
-      "FAILED suite.test.py::test_returns_null",
-    ].join("\n");
-    const result = parsePytestFailures(stdout);
-    expect(result).toHaveLength(2);
-    expect(result[0].name).toBe("builds registry from entries");
-    expect(result[1].name).toBe("returns null");
-    expect(result[0].received).toBeNull();
+  test("does not throw for malformed input", () => {
+    expect(() => extractPytestResults("random garbage output")).not.toThrow();
+    expect(() => extractPytestResults("E   something weird")).not.toThrow();
+  });
+
+  test("always returns empty consoleLogs", () => {
+    const stdout = "suite.test.py::test_case PASSED\n";
+    const result = extractPytestResults(stdout);
+    expect(result.consoleLogs).toEqual([]);
   });
 });
 

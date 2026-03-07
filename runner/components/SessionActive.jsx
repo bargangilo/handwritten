@@ -85,6 +85,7 @@ export default function SessionActive({
   lastRunAt,
   showLogs,
   testFailures,
+  testConsoleLogs,
   rootDir,
 }) {
   const [testState, setTestState] = useState({
@@ -261,11 +262,15 @@ export default function SessionActive({
         });
         dispatch({
           type: Action.TEST_RESULT_RECEIVED,
-          jestJson: result.jestJson || null,
-          pytestStdout: result.pytestStdout || null,
-          runInputs: result.runInputs || null,
-          activeTests: result.activeTests || null,
-          language: result.language || null,
+          payload: {
+            passed: result.passed,
+            total: result.total,
+            timedOut: result.timedOut,
+            crashed: result.crashed,
+            exitCode: result.exitCode,
+            jestJson: result.jestJson ?? null,
+            pytestStdout: result.pytestStdout ?? null,
+          },
         });
         if (result.partInfo) setPartInfo(result.partInfo);
         setErrorMessage(null);
@@ -443,7 +448,7 @@ export default function SessionActive({
           lastRunAt={lastRunAt}
         />
       )}
-      <ConsoleOutput lines={runOutput} visible={showLogs} lastRunAt={lastRunAt} testFailures={testFailures} />
+      <ConsoleOutput lines={runOutput} visible={showLogs} lastRunAt={lastRunAt} testFailures={testFailures} testConsoleLogs={testConsoleLogs} />
       {errorMessage ? (
         <Text color="red">{"  "}Runner error: {errorMessage} {"\u2014"} save again to retry</Text>
       ) : null}

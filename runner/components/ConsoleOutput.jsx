@@ -7,11 +7,13 @@ function formatTime(isoString) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-export default function ConsoleOutput({ lines, visible, lastRunAt, testFailures }) {
+export default function ConsoleOutput({ lines, visible, lastRunAt, testFailures, testConsoleLogs }) {
   const hasRunOutput = visible && lines && lines.length > 0;
   const hasFailures = testFailures && testFailures.length > 0;
+  const hasConsoleLogs = testConsoleLogs && testConsoleLogs.length > 0;
+  const hasTestSection = hasFailures || hasConsoleLogs;
 
-  if (!hasRunOutput && !hasFailures) return null;
+  if (!hasRunOutput && !hasTestSection) return null;
 
   const timeStr = formatTime(lastRunAt);
   const headerText = timeStr
@@ -20,6 +22,8 @@ export default function ConsoleOutput({ lines, visible, lastRunAt, testFailures 
   const pad = Math.max(0, 55 - headerText.length);
   const header = headerText + "\u2500".repeat(pad);
   const border = "\u2500".repeat(55);
+
+  const testHeader = "\u2500\u2500\u2500 Test Results " + "\u2500".repeat(41);
 
   return (
     <>
@@ -78,28 +82,33 @@ export default function ConsoleOutput({ lines, visible, lastRunAt, testFailures 
                 return <Text key={i} dimColor>{"  "}{item.content || ""}</Text>;
             }
           })}
-          {!hasFailures ? <Text dimColor>{"  "}{border}</Text> : null}
+          {!hasTestSection ? <Text dimColor>{"  "}{border}</Text> : null}
         </>
       ) : null}
 
-      {hasFailures ? (
+      {hasTestSection ? (
         <>
           {hasRunOutput ? (
             <Text dimColor>{"  "}{"\u00B7 ".repeat(28).trim()}</Text>
           ) : null}
-          <Text dimColor>{"  "}{"\u2500\u2500\u2500 Test Failures "}{"\u2500".repeat(40)}</Text>
+          <Text dimColor>{"  "}{testHeader}</Text>
+          {hasConsoleLogs ? (
+            <>
+              {testConsoleLogs.map((log, i) => (
+                <Text key={`log-${i}`} dimColor>{"  "}{"\u00B7"} {log}</Text>
+              ))}
+              {hasFailures ? <Text>{" "}</Text> : null}
+            </>
+          ) : null}
           {testFailures.map((failure, i) => (
             <React.Fragment key={i}>
               {i > 0 ? <Text>{" "}</Text> : null}
               <Text>{"  "}<Text color="red">{"\u2718"}</Text>{"  "}{failure.name}</Text>
-              {failure.input != null ? (
-                <Text dimColor>{"     "}{failure.input}</Text>
-              ) : null}
               {failure.expected != null ? (
-                <Text>{"     "}<Text dimColor>expected:</Text> <Text color="green">{" "}{failure.expected}</Text></Text>
+                <Text>{"   "}<Text dimColor>Expected:</Text> <Text color="green">{failure.expected}</Text></Text>
               ) : null}
               {failure.received != null ? (
-                <Text>{"     "}<Text dimColor>received:</Text> <Text color="red">{" "}{failure.received}</Text></Text>
+                <Text>{"   "}<Text dimColor>Received:</Text> <Text color="red">{failure.received}</Text></Text>
               ) : null}
             </React.Fragment>
           ))}

@@ -42,7 +42,7 @@ The CLI (`runner/`) is a Node.js ESM app using React and Ink for terminal UI. It
 - `runner/index.js` — Minimal entry point. Renders `<App />` via Ink's `render()` and waits for exit.
 - `runner/app.jsx` — Root React component. Uses `useReducer` with the state machine from `state.js`. Switches on `state.screen` to render the appropriate screen component. Loads problem data and passes it as props.
 - `runner/state.js` — Application state machine. Exports `Screen` constants (16 screens), `Action` constants, `initialState`, and a pure `reducer(state, action)` function. No side effects.
-- `runner/format.js` — Pure string-returning formatters. Status badges, timer segment, milestone warnings, global/problem stats formatting, console output parsing, test failure correlation. No I/O. Test failure display correlates failing test names against `runInputs` and `activeTests` in `problem.json`. Matched failures get structured input/expected from `runInputs` directly — no parsing. Unmatched failures fall back to test runner output for expected/received values. Both `runInputs` and `activeTests` for the current part are passed through the `TEST_RESULT_RECEIVED` action payload from the watcher callback.
+- `runner/format.js` — Pure string-returning formatters. Status badges, timer segment, milestone warnings, global/problem stats formatting, console output parsing. No I/O. Test failure display extracts Expected/Received values from Jest `--json` `assertionResults` and pytest `--tb=short` output via `extractJestResults()` and `extractPytestResults()`. Console logs are extracted from Jest's `console` array in the JSON output. No correlation against `runInputs` or `activeTests`.
 - `runner/watcher.js` — File watcher (`chokidar`). Spawns `yarn jest` or `pytest` on save, parses pass/fail counts, manages multi-part state and part advancement. Uses a `callbacks` parameter for UI updates — no direct console output.
 - `runner/config.js` — Problem config loading and validation. Workspace path management, scaffold writes, test filter building, resume state inference from file delimiters, workspace status detection, completion markers.
 - `runner/timer.js` — Timer state machine. Stopwatch and countdown modes, pause/resume, wall-clock-based elapsed math (never increments a counter), milestone tracking, serialization for session persistence.
@@ -72,7 +72,7 @@ Interactive components use `Select`, `TextInput`, and `MultiSelect` from `@inkjs
 
 `runner.config.json` is committed and represents project defaults. `loadRunnerConfig()` always returns a usable object — it never throws and falls back to hardcoded defaults if the file is missing or malformed.
 
-Jest is invoked with `--json` in `runTestSuite()` to get structured output. The failure message parsing in `parseTestFailures()` in `format.js` depends on Jest's formatted assertion output format — if Jest is upgraded, verify the `Expected:` / `Received:` line format and the assertion call line format (code frame with `|` column separator and `^` caret) are still parseable.
+Jest is invoked with `--json` in `runTestSuite()` to get structured output. If Jest is upgraded, verify the `--json` `assertionResults` shape and `console` array format are still consistent.
 
 Problem test suites (`suite.test.js`, `sample.test.js`, etc.) live inside `problems/<name>/`. They are excluded from `yarn test` via `testPathIgnorePatterns` in `package.json`.
 

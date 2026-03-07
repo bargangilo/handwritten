@@ -2,7 +2,7 @@
  * Application state machine for the CLI.
  * Pure state transitions — no side effects, no I/O.
  */
-import { formatRunOutput, parseTestFailures, correlateTestFailures, parsePytestFailures } from "./format.js";
+import { formatRunOutput, extractJestResults, extractPytestResults } from "./format.js";
 
 export const Screen = {
   MAIN_MENU: "MAIN_MENU",
@@ -85,14 +85,12 @@ export const initialState = {
   clearProblem: null,
   clearConfig: null,
   // Session result context
-  rawRunStdout: "",
-  rawRunStderr: "",
   lastRunAt: null,
-  runTimedOut: false,
-  runCrashed: false,
-  runSkipped: false,
   runOutput: [],
   testFailures: [],
+  testConsoleLogs: [],
+  testsPassed: 0,
+  testsTotal: 0,
   showLogs: false,
   watcherError: null,
   // Settings context
@@ -242,52 +240,25 @@ export function reducer(state, action) {
       }
       return {
         ...state,
-        rawRunStdout: action.stdout || "",
-        rawRunStderr: action.stderr || "",
         lastRunAt: action.ranAt || null,
-        runTimedOut: !!action.timedOut,
-        runCrashed: !!action.crashed,
-        runSkipped: !!action.skipped,
         runOutput,
         watcherError: null,
       };
     }
     case Action.TEST_RESULT_RECEIVED: {
-      // Determine source failures from Jest or pytest
-      const jestParsed = parseTestFailures(action.jestJson || null);
-      const pytestParsed = parsePytestFailures(action.pytestStdout || null);
-      const sourceFailures = jestParsed.length > 0 ? jestParsed : pytestParsed;
-
-      if (sourceFailures.length === 0) {
-        return { ...state, testFailures: [], watcherError: null };
-      }
-
-      const lang = action.language || (jestParsed.length > 0 ? "javascript" : "python");
-      const failedNames = sourceFailures.map((f) => f.name);
-      const correlated = correlateTestFailures(
-        failedNames,
-        action.runInputs || null,
-        action.activeTests || null,
-        lang
-      );
-
-      // Merge test runner output into correlated results:
-      // - matched: use runInputs input/expected, runner's received
-      // - unmatched: use runner's input (code frame), expected, and received
-      const testFailures = correlated.map((c) => {
-        const source = sourceFailures.find((s) => s.name === c.name);
-        if (c.runInputsMatched) {
-          return { ...c, received: source?.received || null };
-        }
-        return {
-          ...c,
-          input: source?.input || null,
-          expected: source?.expected || null,
-          received: source?.received || null,
-        };
-      });
-
-      return { ...state, testFailures, watcherError: null };
+      const { jestJson, pytestStdout, passed, total } = action.payload || {};
+      const { failures, consoleLogs } =
+        jestJson
+          ? extractJestResults(jestJson)
+          : extractPytestResults(pytestStdout ?? "");
+      return {
+        ...state,
+        testsPassed: passed || 0,
+        testsTotal: total || 0,
+        testFailures: failures,
+        testConsoleLogs: consoleLogs,
+        watcherError: null,
+      };
     }
     case Action.RUN_TESTS:
       return state;
