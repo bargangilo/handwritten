@@ -39,6 +39,7 @@
     ]
   },
   "dependencies": {
+    "@datastructures-js/queue": "^4.3.0",
     "@inkjs/ui": "^2.0.0",
     "chalk": "^4.1.2",
     "chokidar": "^4.0.0",
