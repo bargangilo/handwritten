@@ -25,14 +25,14 @@ Generates a complete interview problem — `problem.json`, `main.js`, `main.py`,
 
 0. **Pre-flight permission grant.**
 
-   If `.agents/.draft/pending.json` does not already exist, perform the following two actions in sequence:
+   Generate a unique draft identifier and prepare the draft directory. Perform the following actions in sequence:
 
-   1. Create the `.agents/.draft/` directory: run `mkdir -p .agents/.draft` from the repo root.
-   2. Write an empty placeholder: `echo '{}' > .agents/.draft/pending.json`. Use bash, not the Write tool.
+   1. Generate a UUID: run `node -e "process.stdout.write(require('crypto').randomUUID())"` from the repo root and capture the output. Store this value — you will use it in Steps 9c and 9d as `<uuid>`.
+   2. Create the `.agents/.draft/` directory: run `mkdir -p .agents/.draft` from the repo root.
+   3. Clean up stale drafts from prior crashed or cancelled generations: run `find .agents/.draft -name 'draft-*.json' -mmin +60 -delete` from the repo root.
+   4. Write an empty placeholder: `echo '{}' > .agents/.draft/draft-<uuid>.json` (substituting the UUID from step 1). Use bash, not the Write tool.
 
-   If the file already exists, skip this step entirely.
-
-   This pre-flight write triggers Claude Code's path permission prompt before any sensitive content exists. Do not explain this step to the user. Proceed immediately to Step 1.
+   This pre-flight write triggers Claude Code's path permission prompt before any sensitive content exists. Each invocation uses its own draft file so that multiple concurrent generations do not interfere. Do not explain this step to the user. Proceed immediately to Step 1.
 
 1. **Determine generation parameters.**
 
@@ -274,9 +274,9 @@ Generates a complete interview problem — `problem.json`, `main.js`, `main.py`,
 
    b. Create the `.agents/.draft/` directory if it does not exist.
 
-   c. Write the payload to `.agents/.draft/pending.json`. This is the only direct file write in this branch — its content is a transit payload, not a readable problem file.
+   c. Write the payload to `.agents/.draft/draft-<uuid>.json` (using the UUID generated in Step 0). This is the only direct file write in this branch — its content is a transit payload, not a readable problem file.
 
-   d. Run `node .agents/scripts/write-problem.js` from the repo root. If it exits with a non-zero code, report the error from stderr to the user and stop.
+   d. Run `node .agents/scripts/write-problem.js draft-<uuid>.json` from the repo root (passing the draft filename as the first argument). If it exits with a non-zero code, report the error from stderr to the user and stop.
 
    e. Confirm to the user that files were written by reporting the output from the script (which lists file paths written).
 
@@ -318,7 +318,7 @@ Generates a complete interview problem — `problem.json`, `main.js`, `main.py`,
 6. Do not generate a problem with the same core concept as an existing problem in `problems/`. If the randomized parameters point toward a concept that already exists, pick a different concept within the same topic/difficulty space.
 7. The directory name under `problems/` must be lowercase-with-hyphens (kebab-case) derived from the title.
 8. When `hideProblemDetails.enabled` is true, the master switch overrides all individual `hide*` sub-flags — behave as if all sub-flags are true regardless of their individual values.
-9. When `hideProblemDetails.hideWriteOutput` is true, never use the Write tool directly for `problem.json`, `suite.test.js`, or `suite.test.py` — always route through `.agents/scripts/write-problem.js`.
+9. When `hideProblemDetails.hideWriteOutput` is true, never use the Write tool directly for `problem.json`, `suite.test.js`, or `suite.test.py` — always route through `.agents/scripts/write-problem.js` with the draft filename from Step 0.
 10. Never echo back inferred parameters to the user when `hideProblemDetails.enabled` is true — not in confirmations, not in proposals, not in summaries.
 11. User-provided input always takes precedence over config defaults and Surprise Me randomization for the dimensions it covers — never discard user context in favor of random selection.
 

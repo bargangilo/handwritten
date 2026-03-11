@@ -6,12 +6,26 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
 const DRAFT_DIR = path.join(REPO_ROOT, ".agents", ".draft");
-const PENDING_FILE = path.join(DRAFT_DIR, "pending.json");
+const draftFilename = process.argv[2] || "pending.json";
+const PENDING_FILE = path.join(DRAFT_DIR, draftFilename);
+
+// Path traversal guard for the draft filename
+const normalizedDraft = path.resolve(PENDING_FILE);
+const normalizedDraftDir = path.resolve(DRAFT_DIR);
+if (
+  !normalizedDraft.startsWith(normalizedDraftDir + path.sep) &&
+  normalizedDraft !== normalizedDraftDir
+) {
+  process.stderr.write(
+    `Error: draft filename "${draftFilename}" resolves outside .agents/.draft/.\n`
+  );
+  process.exit(1);
+}
 
 try {
   // Read and parse the draft payload
   if (!fs.existsSync(PENDING_FILE)) {
-    process.stderr.write("Error: .agents/.draft/pending.json not found.\n");
+    process.stderr.write(`Error: .agents/.draft/${draftFilename} not found.\n`);
     process.exit(1);
   }
 
@@ -19,7 +33,7 @@ try {
   try {
     payload = JSON.parse(fs.readFileSync(PENDING_FILE, "utf8"));
   } catch {
-    process.stderr.write("Error: .agents/.draft/pending.json contains invalid JSON.\n");
+    process.stderr.write(`Error: .agents/.draft/${draftFilename} contains invalid JSON.\n`);
     process.exit(1);
   }
 

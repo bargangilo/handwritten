@@ -10,22 +10,31 @@ const PENDING_FILE = path.join(DRAFT_DIR, "pending.json");
 // Use a temp directory under the repo for test output to avoid polluting real problems/
 const TEST_OUTPUT_DIR = path.join(REPO_ROOT, ".agents", ".draft", "_test_output");
 
-function runScript() {
-  return spawnSync("node", [SCRIPT], {
+function runScript(args = []) {
+  return spawnSync("node", [SCRIPT, ...args], {
     cwd: REPO_ROOT,
     encoding: "utf8",
     timeout: 10000,
   });
 }
 
-function writePending(payload) {
+function writePending(payload, filename = "pending.json") {
   fs.mkdirSync(DRAFT_DIR, { recursive: true });
-  fs.writeFileSync(PENDING_FILE, JSON.stringify(payload), "utf8");
+  const filePath = path.join(DRAFT_DIR, filename);
+  fs.writeFileSync(filePath, JSON.stringify(payload), "utf8");
 }
 
 function cleanup() {
   // Remove pending.json if it exists
   try { fs.unlinkSync(PENDING_FILE); } catch { /* ignore */ }
+  // Remove any draft-*.json files
+  try {
+    for (const f of fs.readdirSync(DRAFT_DIR)) {
+      if (f.startsWith("draft-") && f.endsWith(".json")) {
+        try { fs.unlinkSync(path.join(DRAFT_DIR, f)); } catch { /* ignore */ }
+      }
+    }
+  } catch { /* ignore — DRAFT_DIR may not exist yet */ }
   // Remove test output dir
   try { fs.rmSync(TEST_OUTPUT_DIR, { recursive: true, force: true }); } catch { /* ignore */ }
   // Recreate .gitkeep if it was removed
@@ -347,5 +356,95 @@ describe("write-problem error handling", () => {
     expect(result.status).toBe(1);
     // The first file should NOT have been written because validation happens before writing
     expect(fs.existsSync(path.join(problemDir, "good.json"))).toBe(false);
+  });
+});
+
+describe("write-problem draft filename argument", () => {
+  test("accepts custom draft filename via CLI argument", () => {
+    const problemDir = path.join(TEST_OUTPUT_DIR, "custom-draft");
+    writePending(
+      {
+        problemName: "custom-draft",
+        files: [
+          {
+            relativePath: path.relative(REPO_ROOT, path.join(problemDir, "problem.json")),
+            content: '{"title":"Custom"}',
+          },
+        ],
+      },
+      "draft-test-abc.json"
+    );
+
+    const result = runScript(["draft-test-abc.json"]);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Files written:");
+    expect(fs.readFileSync(path.join(problemDir, "problem.json"), "utf8")).toBe('{"title":"Custom"}');
+    // Draft file should be cleaned up
+    expect(fs.existsSync(path.join(DRAFT_DIR, "draft-test-abc.json"))).toBe(false);
+  });
+
+  test("falls back to pending.json when no argument given", () => {
+    const problemDir = path.join(TEST_OUTPUT_DIR, "fallback-pending");
+    writePending({
+      problemName: "fallback-pending",
+      files: [
+        {
+          relativePath: path.relative(REPO_ROOT, path.join(problemDir, "problem.json")),
+          content: '{"title":"Fallback"}',
+        },
+      ],
+    });
+
+    const result = runScript();
+    expect(result.status).toBe(0);
+    expect(fs.readFileSync(path.join(problemDir, "problem.json"), "utf8")).toBe('{"title":"Fallback"}');
+    expect(fs.existsSync(PENDING_FILE)).toBe(false);
+  });
+
+  test("rejects draft filename with path traversal", () => {
+    const result = runScript(["../evil.json"]);
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("resolves outside");
+  });
+
+  test("concurrent draft files do not interfere", () => {
+    const problemDirA = path.join(TEST_OUTPUT_DIR, "problem-a");
+    const problemDirB = path.join(TEST_OUTPUT_DIR, "problem-b");
+    const payloadB = {
+      problemName: "problem-b",
+      files: [
+        {
+          relativePath: path.relative(REPO_ROOT, path.join(problemDirB, "problem.json")),
+          content: '{"title":"Problem B"}',
+        },
+      ],
+    };
+
+    writePending(
+      {
+        problemName: "problem-a",
+        files: [
+          {
+            relativePath: path.relative(REPO_ROOT, path.join(problemDirA, "problem.json")),
+            content: '{"title":"Problem A"}',
+          },
+        ],
+      },
+      "draft-a.json"
+    );
+    writePending(payloadB, "draft-b.json");
+
+    // Run script targeting only draft-a
+    const result = runScript(["draft-a.json"]);
+    expect(result.status).toBe(0);
+
+    // draft-a.json cleaned up, draft-b.json untouched
+    expect(fs.existsSync(path.join(DRAFT_DIR, "draft-a.json"))).toBe(false);
+    expect(fs.existsSync(path.join(DRAFT_DIR, "draft-b.json"))).toBe(true);
+    expect(JSON.parse(fs.readFileSync(path.join(DRAFT_DIR, "draft-b.json"), "utf8"))).toEqual(payloadB);
+
+    // Output contains only problem-a's files, not problem-b's
+    expect(fs.existsSync(path.join(problemDirA, "problem.json"))).toBe(true);
+    expect(fs.existsSync(path.join(problemDirB, "problem.json"))).toBe(false);
   });
 });
