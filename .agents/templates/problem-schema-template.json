@@ -39,7 +39,7 @@
           "value": ["<string>", "<string>"]
         },
         "scaffold": {
-          "_comment": "Starter code injected into the workspace file. Part 1 scaffold is written as the full file. Part 2+ scaffolds are appended after a delimiter comment: '// ---- Part N ----' (JS) or '# ---- Part N ----' (Python).",
+          "_comment": "Starter code injected into the workspace file. Part 1 scaffold is written as the full file. Part 2+ scaffolds are appended after a delimiter comment: '// ---- Part N ----' (JS) or '# ---- Part N ----' (Python). Beyond function stubs, scaffolds may include domain-essential imports (e.g. require('crypto')) and scaffold stub factories (e.g. createMockFS) — see problem-authoring-guide.md Rule 6 for details.",
           "js": "<string: JavaScript source code>",
           "python": "<string: Python source code>"
         },
@@ -59,6 +59,17 @@
               "function": "<string: exact exported function name matching scaffold>",
               "args": ["<arg1>", "<arg2>"],
               "expected": "<any JSON-serializable value>"
+            }
+          ]
+        },
+        "fixtures": {
+          "_comment": "Optional. File and directory fixtures created in workspace/<problem>/ at session start and on part advancement. Accumulates across parts — later parts can add new fixtures or overwrite earlier ones at the same path. Paths must be relative with no '..' traversal and no reserved filenames (main.js, main.py, _run.js, _run.py, session.json). Text content defaults to utf8; use encoding: 'base64' for binary. Set directory: true for empty directories. Individual fixture content must not exceed 2 KB; total fixtures per part must not exceed 10 KB.",
+          "value": [
+            {
+              "path": "<string: relative path from workspace/<problem>/>",
+              "content": "<string: file content, utf8 or base64>",
+              "encoding": "<'utf8' (default) | 'base64'>",
+              "directory": "<boolean: true for empty directories>"
             }
           ]
         }

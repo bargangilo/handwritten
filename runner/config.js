@@ -140,6 +140,68 @@ export function inferCurrentPart(problemName, language, rootDir) {
 }
 
 /**
+ * Reserved filenames that fixture paths must not collide with.
+ */
+const RESERVED_FILENAMES = new Set([
+  "main.js", "main.py", "_run.js", "_run.py", "session.json",
+]);
+
+/**
+ * Materializes fixture files from problem.json parts into the workspace directory.
+ * Processes parts[0] through parts[upToPart] in order — later parts overwrite
+ * same-path entries from earlier parts.
+ * Idempotent — safe to call multiple times.
+ *
+ * @param {string} problemName - Problem directory name
+ * @param {object[]} parts - The parts array from problem.json
+ * @param {number} upToPart - 0-indexed last part to process (inclusive)
+ * @param {string} rootDir - Repository root directory
+ */
+export function writeFixtures(problemName, parts, upToPart, rootDir) {
+  if (!parts || !Array.isArray(parts)) return;
+
+  const workspaceDir = path.join(rootDir, "workspace", problemName);
+
+  // Accumulate fixtures in order — later parts overwrite same-path entries
+  const merged = new Map();
+  for (let i = 0; i <= upToPart && i < parts.length; i++) {
+    const part = parts[i];
+    if (!part || !Array.isArray(part.fixtures)) continue;
+    for (const fixture of part.fixtures) {
+      if (!fixture || typeof fixture.path !== "string") continue;
+      merged.set(fixture.path, fixture);
+    }
+  }
+
+  for (const fixture of merged.values()) {
+    const relPath = fixture.path;
+
+    // Reject absolute paths
+    if (path.isAbsolute(relPath)) continue;
+
+    // Reject path traversal
+    const normalized = path.normalize(relPath);
+    if (normalized.startsWith("..") || normalized.includes(`..${path.sep}`)) continue;
+
+    // Reject reserved filenames
+    if (RESERVED_FILENAMES.has(normalized)) continue;
+
+    const fullPath = path.join(workspaceDir, normalized);
+
+    if (fixture.directory) {
+      fs.mkdirSync(fullPath, { recursive: true });
+    } else if (typeof fixture.content === "string") {
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+      if (fixture.encoding === "base64") {
+        fs.writeFileSync(fullPath, Buffer.from(fixture.content, "base64"));
+      } else {
+        fs.writeFileSync(fullPath, fixture.content, "utf8");
+      }
+    }
+  }
+}
+
+/**
  * Builds the test name filter string for the given active tests.
  * JS: regex pattern for --testNamePattern
  * Python: keyword expression for -k

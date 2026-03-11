@@ -151,8 +151,9 @@ Generates a complete interview problem — `problem.json`, `main.js`, `main.py`,
    - `expectedMinutes` — from the approved proposal.
    - `generatedBy` — `"agent"`.
    - `generatedAt` — current ISO 8601 timestamp. Use the actual current time, not a placeholder.
-   - `parts` — each part with `title`, `description`, `activeTests`, and `scaffold` (js and/or python). Follow all authoring rules:
+   - `parts` — each part with `title`, `description`, `activeTests`, `scaffold` (js and/or python), and optionally `fixtures`. Follow all authoring rules:
      - Titles: Rule 3 (what to build, not how).
+     - Fixtures: If the problem requires file or directory access, include a `fixtures` array on the relevant parts. Each fixture entry has `path` (relative, no `..`, no reserved filenames), `content` (text or base64), optional `encoding` (`"utf8"` default or `"base64"`), and optional `directory: true`. Fixture content should be minimal — keep individual files under 2 KB and total per part under 10 KB. Binary fixtures should be the smallest valid representation (e.g., a 1x1 PNG for image problems). Use scaffold stub factories instead of real fixtures when the problem can be solved with mock objects constructed from JSON data.
      - Descriptions: Rule 4 (input/output, not mechanism). Before finalizing any part description, verify all of the following are explicitly stated in plain language within the description:
        - **One-to-many relationships:** If any input collection can contain multiple entries relating to the same entity, state it directly. Do not rely on the data structure to imply it. The exact wording must be explicit: "a single [entity] may appear more than once in the [collection] array."
        - **Output length contract:** If the function returns an array with one element per input element, state: "Return the results as an array with the same length as [input], in the same order, with null at any index where [condition]." Do not use "in the same order" without also stating the length invariance.
@@ -220,7 +221,11 @@ Generates a complete interview problem — `problem.json`, `main.js`, `main.py`,
 
    d. Verify every `runInputs` entry by calling the reference solution with the entry's `args` and confirming the return value matches `expected`. If any `expected` value is wrong, fix it.
 
-   e. Delete all reference solution files. Never include reference solution code in any output artifact — not in problem.json, not in comments, not in the generation summary. The reference solution exists only for verification.
+   e. **Stub factory verification.** If the scaffold contains a stub factory (`createMockFS`, `parserStub`, etc.), verify that it works correctly with the reference solution. Scaffold stub factories are functional code, not just scaffolding — a broken stub factory causes every test to fail and the user cannot fix it (they don't write that code). Trace through at least one test case manually to confirm the stub factory returns the expected data structure.
+
+   f. **Fixture path verification.** If the problem uses `fixtures`, verify that the reference solution can access fixture files at the declared paths when run with `cwd` set to the workspace directory. Confirm that `runInputs` entries reference fixture paths that match the `fixtures` definitions.
+
+   g. Delete all reference solution files. Never include reference solution code in any output artifact — not in problem.json, not in comments, not in the generation summary. The reference solution exists only for verification.
 
    If you cannot write a correct reference solution, this is a signal that the problem concept may be flawed or underspecified. Return to step 3 and revise the concept before proceeding.
 

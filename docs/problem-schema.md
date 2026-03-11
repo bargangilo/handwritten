@@ -43,6 +43,7 @@ Each entry in the `parts` array defines one stage of the problem.
 | `scaffold.js` | string | No | JavaScript starter code for this part. Written to the workspace file on start (Part 1) or appended on advancement (Part 2+). |
 | `scaffold.python` | string | No | Python starter code for this part. Same write/append behavior as `scaffold.js`. |
 | `runInputs` | array | No | Representative function calls executed on every save and shown as Examples. See [runInputs](#runinputs). |
+| `fixtures` | array | No | File and directory fixtures materialized in the workspace at session start and on part advancement. See [Fixture Directories](#fixture-directories). |
 
 ## `runInputs`
 
@@ -146,6 +147,68 @@ A two-part problem showing `runInputs` on both parts with `expected` values:
 ```
 
 Part 1's `flattenArray` run inputs continue executing when Part 2 unlocks. Part 2 adds `sumNested` run inputs. The `function` field matches the scaffold export exactly. All `args` and `expected` values are JSON-serializable. No input duplicates a test case.
+
+## Fixture Directories
+
+### Purpose
+
+Some problems require pre-populated file or directory trees in the workspace — for example, a problem where the user's function reads from a directory of config files or processes images in a folder. The `fixtures` array on each part defines these files. The CLI materializes them in `workspace/<problem>/` at session start and on part advancement.
+
+### Field Reference
+
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `path` | string | Yes | Relative path from `workspace/<problem>/`. No `..` traversal, no absolute paths, no reserved filenames (`main.js`, `main.py`, `_run.js`, `_run.py`, `session.json`). |
+| `content` | string | Conditional | File content. Required unless `directory` is `true`. |
+| `encoding` | string | No | `"utf8"` (default) or `"base64"`. Use `"base64"` for binary files. |
+| `directory` | boolean | No | If `true`, creates an empty directory. `content` is ignored. |
+
+### Accumulation Across Parts
+
+Like `runInputs`, fixtures accumulate across parts. When Part 2 unlocks, the CLI processes fixtures from Part 1 and Part 2 in order. A later part can overwrite a file at the same path as an earlier part — the later definition wins.
+
+### Size Constraints
+
+Individual fixture content must not exceed 2 KB. Total fixtures per part must not exceed 10 KB. Binary fixtures should be minimal stubs (e.g., a 1x1 PNG is ~68 bytes of base64). These limits prevent `problem.json` bloat.
+
+### Path Validation
+
+The CLI rejects fixtures with absolute paths, path traversal (`..`), or reserved filenames. Invalid entries are silently skipped.
+
+### Cleanup
+
+`clearWorkspaceDir()` removes the entire `workspace/<problem>/` directory recursively, including all fixture subdirectories. No special cleanup is needed.
+
+### Worked Example
+
+A problem where the user's function reads config files from a fixture directory:
+
+```json
+{
+  "parts": [{
+    "title": "Parse config files",
+    "activeTests": ["single config", "multiple configs", "empty directory"],
+    "scaffold": { "js": "..." },
+    "fixtures": [
+      { "path": "tmp/configs/app.json", "content": "{\"port\": 3000}" },
+      { "path": "tmp/configs/db.json", "content": "{\"host\": \"localhost\"}" },
+      { "path": "tmp/output", "directory": true }
+    ]
+  }]
+}
+```
+
+The CLI creates `workspace/<problem>/tmp/configs/app.json`, `workspace/<problem>/tmp/configs/db.json`, and an empty `workspace/<problem>/tmp/output/` directory before the first test run.
+
+## Scaffold Content Rules
+
+Beyond function stubs, scaffolds may contain two additional categories of content:
+
+**Domain-essential imports.** Standard library modules that define the problem space (e.g., `require('crypto')` for a hashing problem, `require('fs')` for a file system problem). The test: would a developer expect to need this library before thinking about the algorithm?
+
+**Scaffold stub factories.** Factory functions that construct mock objects from JSON-serializable data. These are provided code that the user does not write — they appear above the user's function with a doc comment. Scaffold stub factories keep function signatures natural and preserve `runInputs` compatibility. Example: `createMockFS(fileTree)` that returns a mock filesystem object.
+
+See the [problem authoring guide](../agents/context/problem-authoring-guide.md) Rule 6 for the complete rules on what scaffold content is permitted.
 
 ## `activeTests` Behavior
 

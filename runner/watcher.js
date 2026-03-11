@@ -8,6 +8,7 @@ import {
   buildTestFilter,
   loadRunnerConfig,
   writeCompletionMarker,
+  writeFixtures,
   getUnlockedParts,
   buildRunHarness,
   writeRunHarness,
@@ -378,6 +379,7 @@ export function startWatching(problem, language, rootDir, config, startPart, tim
             // Advance to next part
             ignoreNextChange = true;
             appendPartScaffold(problem, language, config, nextPart, rootDir);
+            writeFixtures(problem, config.parts, nextPart, rootDir);
 
             // Regenerate run harness with new part's inputs
             const langKey = language === "JavaScript" ? "javascript" : "python";

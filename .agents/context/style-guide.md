@@ -165,6 +165,7 @@ Some problem concepts have a natural affinity for one style. Forcing the unnatur
 - Stateful systems: caches, session managers, rate limiters, queues with priority
 - Resource management: scheduling, allocation, load balancing, inventory
 - Data pipeline operations: log parsing, event stream processing, aggregation
+- File system operations: directory traversal, file search, duplicate detection, file transformation pipelines
 
 **Either style works:**
 - Graph traversal — abstract ("find shortest path in a graph") or real-world ("find shortest delivery route between warehouses")

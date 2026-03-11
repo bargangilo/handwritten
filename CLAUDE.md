@@ -44,7 +44,7 @@ The CLI (`runner/`) is a Node.js ESM app using React and Ink for terminal UI. It
 - `runner/state.js` — Application state machine. Exports `Screen` constants (16 screens), `Action` constants, `initialState`, and a pure `reducer(state, action)` function. No side effects.
 - `runner/format.js` — Pure string-returning formatters. Status badges, timer segment, milestone warnings, global/problem stats formatting, console output parsing. No I/O. Test failure display extracts Expected/Received values from Jest `--json` `assertionResults` and pytest `--tb=short` output via `extractJestResults()` and `extractPytestResults()`. Console logs are extracted from Jest's `console` array in the JSON output. No correlation against `runInputs` or `activeTests`.
 - `runner/watcher.js` — File watcher (`chokidar`). Spawns `yarn jest` or `pytest` on save, parses pass/fail counts, manages multi-part state and part advancement. Uses a `callbacks` parameter for UI updates — no direct console output.
-- `runner/config.js` — Problem config loading and validation. Workspace path management, scaffold writes, test filter building, resume state inference from file delimiters, workspace status detection, completion markers.
+- `runner/config.js` — Problem config loading and validation. Workspace path management, scaffold writes, fixture materialization, test filter building, resume state inference from file delimiters, workspace status detection, completion markers.
 - `runner/timer.js` — Timer state machine. Stopwatch and countdown modes, pause/resume, wall-clock-based elapsed math (never increments a counter), milestone tracking, serialization for session persistence.
 - `runner/stats.js` — Session I/O (`session.json`). Global and per-problem stats computation, streak calculation, time formatting utilities.
 
@@ -67,6 +67,7 @@ Interactive components use `Select`, `TextInput`, and `MultiSelect` from `@inkjs
 | `workspace/<name>/main.js`, `main.py` | Active solution file | Yes (scaffold, part appends, completion marker) |
 | `workspace/<name>/_run.js`, `_run.py` | Generated run harness | Yes (generated on session start, regenerated on part progression, deleted on clear) |
 | `workspace/<name>/session.json` | Timer state, attempt history | Yes (every tick + session end) |
+| `workspace/<name>/tmp/` (and other fixture dirs) | Fixture directories materialized from `problem.json` `fixtures` | Yes (created on session start and part advancement from `parts[].fixtures`) |
 | `runner.config.json` | Runner behavior configuration (timeout, etc.) | No |
 | `tests/runner/` | Runner unit tests | Never |
 

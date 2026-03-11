@@ -65,14 +65,26 @@ Test names describe observable behavior — what the function does with specific
 
 ### Rule 6: Scaffold Rules
 
-Scaffolds provide function signatures and empty bodies only. They must not contain:
+Scaffolds provide function signatures and empty bodies. They must not contain:
 
 - Hints in variable names (e.g. `let memo = {}`, `const visited = new Set()`)
 - Suggestive comments (e.g. `// hint: think about what data structure allows O(1) lookup`)
 - Pre-imported libraries that telegraph the approach (e.g. `from collections import deque`)
 - Partially filled logic or pseudocode
 
-The only acceptable body content is `// TODO: implement` (JS) or `pass` (Python). Doc comments may describe the function's purpose, parameters, and return type — never the approach.
+The only acceptable body content in the user's function is `// TODO: implement` (JS) or `pass` (Python). Doc comments may describe the function's purpose, parameters, and return type — never the approach.
+
+Beyond function stubs, scaffolds may include two additional categories of content:
+
+**Domain-essential imports.** Standard library modules that define the problem space — `require('crypto')` for a hashing problem, `require('fs')` for a file system problem, `import hashlib` for Python. The test: would a developer expect to need this library before thinking about the algorithm? If yes, it is domain-essential and permitted. If the import hints at the specific approach (e.g. `from collections import deque` suggesting BFS), it is not permitted.
+
+**Scaffold stub factories.** Factory functions that construct mock objects from JSON-serializable data. These are provided code that the user does not write. They must:
+- Appear above the user's function(s) in the scaffold
+- Include a doc comment explaining what the factory does and what it returns
+- Accept only JSON-serializable parameters (so they work with `runInputs`)
+- Not contain hints about the solution approach
+
+Example: `createMockFS(fileTree)` that takes a plain object describing a file tree and returns a mock filesystem object. The user calls `createMockFS` with test data — they implement the algorithm, not the mock. This is the preferred pattern for problems that need library mocking because it keeps everything JSON-serializable and compatible with `runInputs`.
 
 ---
 
@@ -253,6 +265,14 @@ Run inputs from Part 1 continue running when Part 2 unlocks. The harness accumul
 
 The run harness handles async functions automatically. In JavaScript, all function calls are awaited inside an async IIFE — this is a no-op for synchronous functions since `await syncValue === syncValue`. In Python, the harness checks each return value with `inspect.isawaitable()` and unwraps coroutines via `asyncio.run()`. No schema changes or special flags are needed. Problems with async solutions work with `runInputs` identically to synchronous problems.
 
+### Mock and Stub Compatibility
+
+When a problem uses scaffold stub factories (Rule 6), `runInputs` work normally — the stub factory accepts JSON-serializable data, so `args` values pass through the harness without issue.
+
+When a problem uses test-level module mocking (`jest.mock('fs')`, `unittest.mock.patch`), `runInputs` must be omitted for any part that depends on the mocked module. The run harness executes outside Jest/pytest and does not apply test-level mocks — function calls that depend on mocked modules will hit the real module and fail or produce wrong results.
+
+When a problem uses direct mock parameter injection (passing mock objects as explicit function parameters), `runInputs` must also be omitted because mock objects are not JSON-serializable.
+
 ### Language-Specific Entries
 
 Each entry specifies a `language` field. For both-language problems, provide matching JS and Python entries per scenario with the correct function names (`findBestSeats` for JS, `find_best_seats` for Python). For JS-only problems, only JS entries are needed.
@@ -426,6 +446,155 @@ describe("partTwoFunction", () => {
 
 Every test in the suite file must be referenced by at least one part's `activeTests`. A test that exists in the file but never appears in any `activeTests` array is dead code and a source of confusion.
 
+### Testing with Mocks and Stubs
+
+Three patterns are supported for problems that involve library usage or external system interaction. Choose the pattern that best fits the problem.
+
+**Pattern A: Standard Library Import.** The scaffold includes `require('fs')`, `require('crypto')`, etc. Tests run against real data or fixture files. `runInputs` work normally. No special test infrastructure needed.
+
+```js
+// suite.test.js — Pattern A (standard import)
+test("hashes file content correctly", () => {
+  // User's function uses require('crypto') from the scaffold
+  expect(mod.hashFile("tmp/data.txt")).toBe("a1b2c3...");
+});
+```
+
+**Pattern B: Scaffold Stub Factory (preferred).** The scaffold embeds a factory function that constructs a mock from JSON-serializable data. The user calls the factory — they implement the algorithm, not the mock. `runInputs` work normally because all data is JSON-serializable.
+
+```js
+// suite.test.js — Pattern B (scaffold stub factory)
+test("finds duplicates in file tree", () => {
+  // createMockFS is defined in the scaffold — user doesn't write it
+  const result = mod.findDuplicates(mod.createMockFS({
+    "a.txt": "hello",
+    "b.txt": "world",
+    "c.txt": "hello"
+  }));
+  expect(result).toEqual([["a.txt", "c.txt"]]);
+});
+```
+
+```python
+# suite.test.py — Pattern B (scaffold stub factory)
+def test_finds_duplicates_in_file_tree():
+    from main import find_duplicates, create_mock_fs
+    result = find_duplicates(create_mock_fs({
+        "a.txt": "hello",
+        "b.txt": "world",
+        "c.txt": "hello"
+    }))
+    assert result == [["a.txt", "c.txt"]]
+```
+
+Do not pass mock objects as explicit function parameters instead of using scaffold stub factories. This changes function signatures, hints at the approach, and breaks `runInputs` compatibility. Prefer scaffold stub factories that construct the mock internally from JSON-serializable data.
+
+**Pattern C: Test-Level Module Mocking (use sparingly).** Tests use `jest.mock('fs')` / `unittest.mock.patch`. The user's code uses normal imports. `runInputs` must be omitted for parts depending on mocked modules because the harness runs outside Jest/pytest.
+
+```js
+// suite.test.js — Pattern C (test-level mocking)
+jest.mock("fs");
+const fs = require("fs");
+
+test("reads directory contents", () => {
+  fs.readdirSync.mockReturnValue(["a.txt", "b.txt"]);
+  fs.readFileSync.mockImplementation((p) =>
+    p.includes("a.txt") ? "hello" : "world"
+  );
+  expect(mod.listFiles("./data")).toEqual(["a.txt", "b.txt"]);
+});
+```
+
+**Mock call assertions.** Do not assert on the number of calls to the user's own functions. Assertions on mock/stub call sequences are permitted when the problem requires specific I/O behavior (e.g., verifying that the user's function reads files in a particular order).
+
+### Fixture Cleanup in Tests
+
+Tests that write to fixture directories must manage their own cleanup to prevent cross-test pollution. The key rule: tests must never depend on fixture state left by a previous test. Each test must set up its own filesystem state or receive a fresh copy.
+
+**Pattern 1: `beforeEach` reset (recommended for write-heavy problems)**
+
+```js
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const mod = require("../../workspace/<name>/main");
+
+let testDir;
+
+function copyDirSync(src, dest) {
+  fs.mkdirSync(dest, { recursive: true });
+  for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+    const srcPath = path.join(src, entry.name);
+    const destPath = path.join(dest, entry.name);
+    if (entry.isDirectory()) {
+      copyDirSync(srcPath, destPath);
+    } else {
+      fs.copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+beforeEach(() => {
+  testDir = fs.mkdtempSync(path.join(os.tmpdir(), "test-"));
+  copyDirSync(path.join(__dirname, "..", "..", "workspace", "<name>", "tmp"), testDir);
+});
+
+afterEach(() => {
+  fs.rmSync(testDir, { recursive: true, force: true });
+});
+
+test("processes files correctly", () => {
+  const result = mod.processAll(testDir);
+  expect(result).toEqual(/* ... */);
+});
+```
+
+```python
+import sys, os, shutil, tempfile
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "workspace", "<name>"))
+
+FIXTURE_SRC = os.path.join(os.path.dirname(__file__), "..", "..", "workspace", "<name>", "tmp")
+
+def test_processes_files_correctly():
+    from main import process_all
+    test_dir = tempfile.mkdtemp(prefix="test-")
+    try:
+        shutil.copytree(FIXTURE_SRC, os.path.join(test_dir, "tmp"), dirs_exist_ok=True)
+        result = process_all(test_dir)
+        assert result == ...
+    finally:
+        shutil.rmtree(test_dir)
+```
+
+**Pattern 2: Read-only fixtures with per-test output dirs**
+
+When the user's code reads from fixtures and writes to a separate output path, tests create only the output directory per-test:
+
+```js
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const mod = require("../../workspace/<name>/main");
+
+const FIXTURE_DIR = path.join(__dirname, "..", "..", "workspace", "<name>", "tmp", "input");
+
+let outputDir;
+
+beforeEach(() => {
+  outputDir = fs.mkdtempSync(path.join(os.tmpdir(), "output-"));
+});
+
+afterEach(() => {
+  fs.rmSync(outputDir, { recursive: true, force: true });
+});
+
+test("writes output files", () => {
+  mod.transform(FIXTURE_DIR, outputDir);
+  expect(fs.readdirSync(outputDir)).toContain("result.json");
+});
+```
+
 ---
 
 ## Section 8: Self-Check Checklist
@@ -468,6 +637,17 @@ Run through this checklist before writing any files. Every answer must match the
 34. For any function that takes a mutable input and is not specified to mutate it: is there a test verifying the original input is unchanged after the call? **Must be Yes.**
 35. For any function that is specified to mutate its input: is there a test verifying the mutation occurred correctly? **Must be Yes if applicable.**
 36. For "both" language config: does every test in `suite.test.py` assert the same expected values as its counterpart in `suite.test.js`? **Must be Yes if applicable.**
+37. If scaffold contains library imports, is every import domain-essential (not approach-revealing)? **Must be Yes.**
+38. If scaffold contains a stub factory, does it appear above the user's function with a doc comment? **Must be Yes.**
+39. If test-level module mocking is used, are `runInputs` omitted for parts depending on mocked modules? **Must be Yes.**
+40. If scaffold uses stub factories, do all `runInputs` pass JSON-serializable data? **Must be Yes.**
+41. If `fixtures` is defined, are all paths relative with no `..` or absolute paths? **Must be Yes.**
+42. Do fixture paths avoid reserved names (`main.js`, `main.py`, `_run.js`, `_run.py`, `session.json`)? **Must be Yes.**
+43. If `runInputs` reference fixture paths, do those paths match the `fixtures` definitions? **Must be Yes.**
+44. For base64-encoded fixtures, is the content a valid encoding of the intended file? **Must be Yes.**
+45. Does each individual fixture's content stay under 2 KB and total fixtures per part under 10 KB? **Must be Yes.**
+46. If the scaffold contains a stub factory, has it been verified to work correctly with a reference solution (Step 7)? **Must be Yes.**
+47. If tests write to fixture directories, does each test set up its own fresh state (no cross-test pollution)? **Must be Yes.**
 
 ---
 

@@ -11,6 +11,7 @@ import {
   ensureWorkspace,
   hasWorkspaceFile,
   writeInitialScaffold,
+  writeFixtures,
   workspacePath,
   getUnlockedParts,
   buildRunHarness,
@@ -111,6 +112,9 @@ export default function SessionActive({
     if (!resumeData) {
       writeInitialScaffold(problem, language, config, rootDir);
     }
+
+    // Materialize fixture files (idempotent — safe on resume)
+    writeFixtures(problem, config.parts, startPart || 0, rootDir);
 
     // Generate run harness from current unlocked state
     const langKey = language === "JavaScript" ? "javascript" : "python";

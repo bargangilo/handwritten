@@ -9,6 +9,7 @@ import {
   workspacePath,
   hasWorkspaceFile,
   writeInitialScaffold,
+  writeFixtures,
   inferCurrentPart,
   hasWorkspaceDir,
   clearWorkspaceDir,
@@ -1065,5 +1066,160 @@ describe("deleteRunHarness", () => {
       throw new Error("EACCES");
     });
     expect(() => deleteRunHarness("/fake/workspace/test", "javascript")).not.toThrow();
+  });
+});
+
+// --- writeFixtures ---
+
+describe("writeFixtures", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    fs.mkdirSync.mockImplementation(() => {});
+    fs.writeFileSync.mockImplementation(() => {});
+  });
+
+  test("writes text file to correct path", () => {
+    const parts = [{
+      fixtures: [{ path: "tmp/config.json", content: '{"key": "value"}' }],
+    }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join("/fake", "workspace", "my-problem", "tmp", "config.json"),
+      '{"key": "value"}',
+      "utf8"
+    );
+  });
+
+  test("writes base64 file as binary Buffer", () => {
+    const b64 = Buffer.from("hello").toString("base64");
+    const parts = [{
+      fixtures: [{ path: "tmp/data.bin", content: b64, encoding: "base64" }],
+    }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join("/fake", "workspace", "my-problem", "tmp", "data.bin"),
+      Buffer.from(b64, "base64")
+    );
+  });
+
+  test("creates empty directory for directory: true", () => {
+    const parts = [{
+      fixtures: [{ path: "tmp/output", directory: true }],
+    }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.mkdirSync).toHaveBeenCalledWith(
+      path.join("/fake", "workspace", "my-problem", "tmp", "output"),
+      { recursive: true }
+    );
+    // Should not write a file for directory entries
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test("creates parent directories recursively", () => {
+    const parts = [{
+      fixtures: [{ path: "a/b/c/file.txt", content: "hello" }],
+    }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.mkdirSync).toHaveBeenCalledWith(
+      path.join("/fake", "workspace", "my-problem", "a", "b", "c"),
+      { recursive: true }
+    );
+  });
+
+  test("skips when no fixtures field on part", () => {
+    const parts = [{ activeTests: ["a"] }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test("skips when fixtures array is empty", () => {
+    const parts = [{ fixtures: [] }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test("accumulates fixtures from parts 0 through N", () => {
+    const parts = [
+      { fixtures: [{ path: "tmp/a.txt", content: "aaa" }] },
+      { fixtures: [{ path: "tmp/b.txt", content: "bbb" }] },
+      { fixtures: [{ path: "tmp/c.txt", content: "ccc" }] },
+    ];
+    writeFixtures("my-problem", parts, 2, "/fake");
+
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(3);
+  });
+
+  test("later part overwrites earlier at same path", () => {
+    const parts = [
+      { fixtures: [{ path: "tmp/config.json", content: "original" }] },
+      { fixtures: [{ path: "tmp/config.json", content: "updated" }] },
+    ];
+    writeFixtures("my-problem", parts, 1, "/fake");
+
+    // Only one write — the merged map deduplicates by path
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join("/fake", "workspace", "my-problem", "tmp", "config.json"),
+      "updated",
+      "utf8"
+    );
+  });
+
+  test("rejects path traversal (../)", () => {
+    const parts = [{
+      fixtures: [{ path: "../etc/passwd", content: "bad" }],
+    }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test("rejects absolute paths", () => {
+    const parts = [{
+      fixtures: [{ path: "/etc/passwd", content: "bad" }],
+    }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test("skips reserved filenames", () => {
+    const reserved = ["main.js", "main.py", "_run.js", "_run.py", "session.json"];
+    const parts = [{
+      fixtures: reserved.map((name) => ({ path: name, content: "bad" })),
+    }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test("handles null/undefined fixture entries gracefully", () => {
+    const parts = [{
+      fixtures: [null, undefined, { path: "tmp/ok.txt", content: "ok" }],
+    }];
+    writeFixtures("my-problem", parts, 0, "/fake");
+
+    expect(fs.writeFileSync).toHaveBeenCalledTimes(1);
+    expect(fs.writeFileSync).toHaveBeenCalledWith(
+      path.join("/fake", "workspace", "my-problem", "tmp", "ok.txt"),
+      "ok",
+      "utf8"
+    );
+  });
+
+  test("does nothing when parts is null", () => {
+    writeFixtures("my-problem", null, 0, "/fake");
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
+  });
+
+  test("does nothing when parts is undefined", () => {
+    writeFixtures("my-problem", undefined, 0, "/fake");
+    expect(fs.writeFileSync).not.toHaveBeenCalled();
   });
 });
