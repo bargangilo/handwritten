@@ -1,4 +1,5 @@
 import React, { useReducer, useMemo, useCallback } from "react";
+import { Box } from "ink";
 import path from "path";
 import fs from "fs";
 import chalk from "chalk";
@@ -120,15 +121,18 @@ export default function App({ rootDir }) {
     return [];
   }, [state.screen, problems, rootDir]);
 
+  let screen;
   switch (state.screen) {
     case Screen.MAIN_MENU:
-      return <MainMenu dispatch={enrichedDispatch} />;
+      screen = <MainMenu dispatch={enrichedDispatch} />;
+      break;
 
     case Screen.PROBLEM_SELECT:
-      return <ProblemSelect dispatch={enrichedDispatch} problems={problems} />;
+      screen = <ProblemSelect dispatch={enrichedDispatch} problems={problems} />;
+      break;
 
     case Screen.LANGUAGE_SELECT:
-      return (
+      screen = (
         <LanguageSelect
           dispatch={enrichedDispatch}
           languages={state.availableLanguages}
@@ -136,18 +140,20 @@ export default function App({ rootDir }) {
           rootDir={rootDir}
         />
       );
+      break;
 
     case Screen.COUNTDOWN_PROMPT:
-      return (
+      screen = (
         <CountdownPrompt
           dispatch={enrichedDispatch}
           expectedMinutes={state.problemConfig?.expectedMinutes || null}
           isCompletedResume={!!state.resumeData?.completed}
         />
       );
+      break;
 
     case Screen.RESUME_OR_RESTART:
-      return (
+      screen = (
         <ResumeOrRestart
           dispatch={enrichedDispatch}
           problem={state.selectedProblem}
@@ -157,9 +163,10 @@ export default function App({ rootDir }) {
           loadSession={loadSession}
         />
       );
+      break;
 
     case Screen.SESSION_ACTIVE:
-      return (
+      screen = (
         <SessionActive
           dispatch={enrichedDispatch}
           problem={state.selectedProblem}
@@ -177,12 +184,14 @@ export default function App({ rootDir }) {
           rootDir={rootDir}
         />
       );
+      break;
 
     case Screen.PROBLEM_LIST:
-      return <ProblemList dispatch={enrichedDispatch} problems={problems} />;
+      screen = <ProblemList dispatch={enrichedDispatch} problems={problems} />;
+      break;
 
     case Screen.PROBLEM_LIST_DETAIL:
-      return (
+      screen = (
         <ProblemListDetail
           dispatch={enrichedDispatch}
           problem={state.detailProblem}
@@ -190,18 +199,20 @@ export default function App({ rootDir }) {
           status={problems.find((p) => p.name === state.detailProblem)?.status || null}
         />
       );
+      break;
 
     case Screen.STATS_OVERVIEW:
-      return (
+      screen = (
         <StatsOverview
           dispatch={enrichedDispatch}
           sessions={sessions}
           problems={problems}
         />
       );
+      break;
 
     case Screen.STATS_DETAIL:
-      return (
+      screen = (
         <StatsDetail
           dispatch={enrichedDispatch}
           problemName={state.statsProblem}
@@ -209,17 +220,19 @@ export default function App({ rootDir }) {
           problems={problems}
         />
       );
+      break;
 
     case Screen.CLEAR_PROBLEM_SELECT:
-      return (
+      screen = (
         <ClearProblemSelect
           dispatch={enrichedDispatch}
           problems={clearableProblems}
         />
       );
+      break;
 
     case Screen.CLEAR_CONFIRM:
-      return (
+      screen = (
         <ClearConfirm
           dispatch={enrichedDispatch}
           problem={state.clearProblem}
@@ -227,21 +240,24 @@ export default function App({ rootDir }) {
           rootDir={rootDir}
         />
       );
+      break;
 
     case Screen.EXPORT_SKILLS:
-      return <ExportSkills dispatch={enrichedDispatch} rootDir={rootDir} />;
+      screen = <ExportSkills dispatch={enrichedDispatch} rootDir={rootDir} />;
+      break;
 
     case Screen.SETTINGS_MENU:
-      return (
+      screen = (
         <SettingsMenu
           configSchema={state.configSchema}
           configValues={state.configValues}
           dispatch={enrichedDispatch}
         />
       );
+      break;
 
     case Screen.SETTINGS_SECTION:
-      return (
+      screen = (
         <SettingsSection
           configSchema={state.configSchema}
           configValues={state.configValues}
@@ -249,9 +265,10 @@ export default function App({ rootDir }) {
           dispatch={enrichedDispatch}
         />
       );
+      break;
 
     case Screen.SETTINGS_EDIT_FIELD:
-      return (
+      screen = (
         <SettingsEditField
           configSchema={state.configSchema}
           configValues={state.configValues}
@@ -260,8 +277,11 @@ export default function App({ rootDir }) {
           dispatch={enrichedDispatch}
         />
       );
+      break;
 
     default:
-      return <MainMenu dispatch={enrichedDispatch} />;
+      screen = <MainMenu dispatch={enrichedDispatch} />;
   }
+
+  return <Box flexDirection="column" minHeight={15}>{screen}</Box>;
 }

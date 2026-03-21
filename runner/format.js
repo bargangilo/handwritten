@@ -82,6 +82,22 @@ export function formatGlobalStats(stats) {
   return lines.join("\n");
 }
 
+/**
+ * Formats completion stats for the post-solve banner.
+ * Shows total time and per-part split breakdown.
+ */
+export function formatCompletionStats(totalSeconds, splits) {
+  const sep = chalk.gray("  " + "─".repeat(30));
+  const lines = [
+    `  Total time       ${chalk.white.bold(formatSeconds(totalSeconds))}`,
+    sep,
+  ];
+  for (const s of splits) {
+    lines.push(`  Part ${s.part}            ${chalk.white(formatSeconds(s.elapsedSeconds))}`);
+  }
+  return lines.join("\n");
+}
+
 const TRUNCATE_LIMIT = 200;
 const ERROR_CLASS_PATTERN = /^[A-Z][A-Za-z]*(?:Error|Exception|Warning|Fault): /;
 

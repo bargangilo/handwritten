@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { execFileSync, spawn as spawnProc } from "child_process";
 import { Action } from "../state.js";
-import { formatSeconds } from "../format.js";
+import { formatSeconds, formatCompletionStats } from "../format.js";
 import { startWatching } from "../watcher.js";
 import { createTimer } from "../timer.js";
 import {
@@ -97,12 +97,14 @@ export default function SessionActive({
   const [timerDisplay, setTimerDisplay] = useState(null);
   const [messages, setMessages] = useState([]);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [completed, setCompleted] = useState(false);
 
   const timerRef = useRef(null);
   const watcherRef = useRef(null);
   const sessionRef = useRef(null);
   const sigintRef = useRef(null);
   const endedRef = useRef(false);
+  const completedRef = useRef(false);
 
   useEffect(() => {
     // Ensure workspace exists
@@ -295,14 +297,51 @@ export default function SessionActive({
         }
       },
       onAllComplete: () => {
+        if (completedRef.current) return;
+        completedRef.current = true;
+        setCompleted(true);
+
+        const timer = timerRef.current;
+        const sessionData = sessionRef.current;
+
+        // Timer is already stopped by watcher, but ensure consistency
+        if (timer) timer.stop();
+
+        const finalState = timer ? timer.getState() : null;
+        const totalSeconds = finalState?.totalElapsedSeconds ?? 0;
+        const finalPartSeconds = finalState?.currentPartElapsedSeconds ?? 0;
+
+        // Build complete splits array (intermediate parts + final part)
+        const allSplits = [...(sessionData?.splits || [])];
+        const finalPartNumber = allSplits.length + 1;
+        allSplits.push({ part: finalPartNumber, elapsedSeconds: finalPartSeconds });
+
+        // Persist session
+        if (sessionData) {
+          sessionData.completed = true;
+          sessionData.totalElapsedSeconds = totalSeconds;
+          sessionData.splits = allSplits;
+          sessionData.attempts.push({
+            date: sessionData.lastStarted,
+            totalSeconds,
+            splits: [...allSplits],
+            completed: true,
+            wasCountdown: finalState?.mode === "countdown",
+            countdownSeconds: finalState?.countdownSeconds,
+          });
+          writeSessionSync(problem, sessionData, rootDir);
+        }
+
+        // Remove SIGINT handler (session is saved, no data loss risk)
+        if (sigintRef.current) {
+          process.removeListener("SIGINT", sigintRef.current);
+        }
+
+        // Append completion banner
         setMessages((prev) => [
           ...prev,
-          { id: msgCounter++, type: "complete", text: `✔ All parts complete for ${problem}!` },
+          { id: msgCounter++, type: "completeBanner", text: problem, totalSeconds, splits: allSplits },
         ]);
-        if (sessionRef.current) {
-          sessionRef.current.completed = true;
-        }
-        endSession(true);
       },
       onMilestone: ({ warning }) => {
         setMessages((prev) => [...prev, { id: msgCounter++, type: "milestone", text: warning }]);
@@ -368,7 +407,17 @@ export default function SessionActive({
 
   useInput((input) => {
     if (input === "q" || input === "Q") {
-      endSession(false);
+      if (completedRef.current) {
+        // Session already saved in onAllComplete; just clean up and exit
+        if (watcherRef.current) {
+          watcherRef.current.close();
+          watcherRef.current = null;
+        }
+        process.stdout.write("\x1b[2J\x1b[H");
+        dispatch({ type: Action.SESSION_END });
+      } else {
+        endSession(false);
+      }
     } else if (input === "p" || input === "P") {
       const timer = timerRef.current;
       if (timer && !timer.isDisabled()) {
@@ -391,7 +440,11 @@ export default function SessionActive({
   return (
     <>
       <Text color="cyan">{"\n  "}Watching {problem} ({language})</Text>
-      <Text dimColor>{"  "}Save to run ({"\u2318"}S / Ctrl+S)  {"·"}  T test  {timerMode !== "disabled" ? "·  P pause  " : ""}{"·"}  Q quit  {"·"}  L logs{"\n"}</Text>
+      {completed ? (
+        <Text dimColor>{"  "}Save to run ({"\u2318"}S / Ctrl+S)  {"·"}  T test  {"·"}  Q menu  {"·"}  L logs{"\n"}</Text>
+      ) : (
+        <Text dimColor>{"  "}Save to run ({"\u2318"}S / Ctrl+S)  {"·"}  T test  {timerMode !== "disabled" ? `·  P ${timerDisplay?.isPaused ? "resume" : "pause"}  ` : ""}{"·"}  Q quit  {"·"}  L logs{"\n"}</Text>
+      )}
 
       <Static items={messages}>
         {(msg) => {
@@ -415,14 +468,23 @@ export default function SessionActive({
               );
             case "partComplete":
               return <Text key={msg.id} color="green" bold>{"\n  "}{msg.text}</Text>;
-            case "complete":
+            case "completeBanner": {
+              const statsText = formatCompletionStats(msg.totalSeconds, msg.splits);
               return (
                 <Text key={msg.id}>
-                  <Text color="green" bold>{"\n  "}{msg.text}</Text>
                   {"\n"}
-                  <Text color="gray">{"  "}Returning to menu...</Text>
+                  <Text color="green">{"  "}{"╔" + "═".repeat(43) + "╗"}</Text>
+                  {"\n"}
+                  <Text color="green">{"  ║"}<Text bold color="white">{"         ✔  Problem Complete!  ✔         "}</Text>{"║"}</Text>
+                  {"\n"}
+                  <Text color="green">{"  "}{"╚" + "═".repeat(43) + "╝"}</Text>
+                  {"\n\n"}
+                  <Text>{statsText}</Text>
+                  {"\n\n"}
+                  <Text dimColor>{"  "}Keep experimenting, or press Q to return to menu</Text>
                 </Text>
               );
+            }
             case "milestone":
               return <Text key={msg.id}>{"\n"}{msg.text}</Text>;
             case "overtime":

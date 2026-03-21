@@ -4,6 +4,7 @@ import {
   formatTimerSegment,
   formatGlobalStats,
   formatProblemStats,
+  formatCompletionStats,
   formatRunOutput,
   extractJestResults,
   extractPytestResults,
@@ -642,6 +643,51 @@ describe("extractPytestResults", () => {
     const stdout = "suite.test.py::test_case PASSED\n";
     const result = extractPytestResults(stdout);
     expect(result.consoleLogs).toEqual([]);
+  });
+});
+
+// --- Completion stats ---
+
+describe("formatCompletionStats", () => {
+  test("formats single-part problem", () => {
+    const result = stripAnsi(formatCompletionStats(120, [{ part: 1, elapsedSeconds: 120 }]));
+    expect(result).toContain("Total time");
+    expect(result).toContain("02:00");
+    expect(result).toContain("Part 1");
+  });
+
+  test("formats multi-part problem with correct splits", () => {
+    const splits = [
+      { part: 1, elapsedSeconds: 180 },
+      { part: 2, elapsedSeconds: 120 },
+      { part: 3, elapsedSeconds: 60 },
+    ];
+    const result = stripAnsi(formatCompletionStats(360, splits));
+    expect(result).toContain("Total time");
+    expect(result).toContain("06:00");
+    expect(result).toContain("Part 1");
+    expect(result).toContain("03:00");
+    expect(result).toContain("Part 2");
+    expect(result).toContain("02:00");
+    expect(result).toContain("Part 3");
+    expect(result).toContain("01:00");
+  });
+
+  test("handles zero seconds", () => {
+    const result = stripAnsi(formatCompletionStats(0, [{ part: 1, elapsedSeconds: 0 }]));
+    expect(result).toContain("Total time");
+    expect(result).toContain("00:00");
+    expect(result).toContain("Part 1");
+  });
+
+  test("handles times over an hour", () => {
+    const result = stripAnsi(formatCompletionStats(3661, [{ part: 1, elapsedSeconds: 3661 }]));
+    expect(result).toContain("1:01:01");
+  });
+
+  test("returns a string with separator line", () => {
+    const result = formatCompletionStats(60, [{ part: 1, elapsedSeconds: 60 }]);
+    expect(result).toContain("─");
   });
 });
 
