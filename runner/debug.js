@@ -105,6 +105,23 @@ export function onRender(id, phase, actualDuration) {
 }
 
 /**
+ * Logs heap memory usage every 30 seconds.
+ * Helps identify memory growth patterns in long-running sessions.
+ */
+export function initHeapMonitor() {
+  setInterval(() => {
+    const mem = process.memoryUsage();
+    logLine(JSON.stringify({
+      t: new Date().toISOString(),
+      type: "HEAP",
+      heapUsedMB: Math.round(mem.heapUsed / 1024 / 1024),
+      heapTotalMB: Math.round(mem.heapTotal / 1024 / 1024),
+      rssMB: Math.round(mem.rss / 1024 / 1024),
+    }));
+  }, 30000).unref();
+}
+
+/**
  * Registers process-level crash handlers.
  * Uses synchronous I/O — async writes may not complete during a stack overflow.
  */

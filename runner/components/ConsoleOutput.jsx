@@ -7,7 +7,7 @@ function formatTime(isoString) {
   return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-export default function ConsoleOutput({ lines, visible, lastRunAt, testFailures, testConsoleLogs }) {
+export default React.memo(function ConsoleOutput({ lines, visible, lastRunAt, testFailures, testConsoleLogs }) {
   const hasRunOutput = visible && lines && lines.length > 0;
   const hasFailures = testFailures && testFailures.length > 0;
   const hasConsoleLogs = testConsoleLogs && testConsoleLogs.length > 0;
@@ -120,4 +120,4 @@ export default function ConsoleOutput({ lines, visible, lastRunAt, testFailures,
       ) : null}
     </>
   );
-}
+});

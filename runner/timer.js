@@ -185,6 +185,7 @@ export function createTimer(options = {}) {
       clearInterval(intervalId);
       intervalId = null;
     }
+    tickCallbacks.length = 0;
   }
 
   function splitPart() {
